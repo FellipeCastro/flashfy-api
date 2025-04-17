@@ -34,6 +34,21 @@ class UserController {
             return res.status(401).json({ error: error.message });
         }
     }
+
+    async Profile(req, res) {
+        try {
+            const { idUser } = req.params;
+
+            if (!idUser) {
+                return res.status(400).json({ error: "ID do usuário não informado." });
+            }
+
+            const result = await UserService.Profile(idUser);
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(404).json({ error: error.message });
+        }
+    }
 }
 
 export default new UserController();

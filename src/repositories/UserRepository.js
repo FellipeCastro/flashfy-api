@@ -27,6 +27,18 @@ class UserRepository {
             throw new Error("Erro ao registrar usuário.");
         }
     }
+
+    async Profile(idUser) {
+        try {
+            const sql = "SELECT idUser, name, email FROM users WHERE idUser = ?";
+            const result = await consult(sql, [idUser]);
+
+            return result.length > 0 ? result[0] : null;
+        } catch (error) {
+            console.error("Erro ao buscar perfil: ", error.message);
+            throw new Error("Erro ao buscar perfil.");
+        }
+    }
 }
 
 export default new UserRepository();

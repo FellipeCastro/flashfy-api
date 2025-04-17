@@ -13,11 +13,13 @@ class Token {
     }
 
     Validate(req, res, next) {
-        const token = req.headers.authorization;
+        const authToken = req.headers.authorization;
 
-        if (!token) {
+        if (!authToken) {
             return res.status(401).json({ error: "Token não informado" });
         }
+
+        const token = authToken.split(" ")[1];
 
         jwt.verify(token, secret, (error, tokenDecoded) => {
             if (error) {

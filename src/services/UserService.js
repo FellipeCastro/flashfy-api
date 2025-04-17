@@ -42,6 +42,21 @@ class UserService {
             throw new Error(error.message);
         }
     }
+
+    async Profile(idUser) {
+        try {
+            const user = await UserRepository.Profile(idUser);
+
+            if (!user) {
+                throw new Error("Usuário não encontrado.");
+            }
+
+            return user;
+        } catch (error) {
+            console.error("Erro ao buscar perfil: ", error.message);
+            throw new Error(error.message);
+        }
+    }
 }
 
 export default new UserService();
