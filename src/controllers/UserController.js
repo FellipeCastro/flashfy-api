@@ -37,14 +37,9 @@ class UserController {
 
     async Profile(req, res) {
         try {
-            const { idUser } = req.params;
-
-            if (!idUser) {
-                return res.status(400).json({ error: "ID do usuário não informado." });
-            }
-
-            const result = await UserService.Profile(idUser);
-            return res.status(200).json(result);
+            const idUser = req.idUser;
+            const user = await UserService.Profile(idUser);
+            return res.status(200).json(user);
         } catch (error) {
             return res.status(404).json({ error: error.message });
         }

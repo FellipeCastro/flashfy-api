@@ -16,14 +16,14 @@ class Token {
         const authToken = req.headers.authorization;
 
         if (!authToken) {
-            return res.status(401).json({ error: "Token não informado" });
+            return res.status(401).json({ error: "Token não informado." });
         }
 
         const token = authToken.split(" ")[1];
 
         jwt.verify(token, secret, (error, tokenDecoded) => {
             if (error) {
-                return res.status(401).json({ error: "Token inválido" });
+                return res.status(401).json({ error: "Token inválido." });
             }
 
             req.idUser = tokenDecoded.idUser;
