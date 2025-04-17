@@ -11,7 +11,11 @@ class UserService {
             }
 
             const hashedPassword = await bcrypt.hash(password, 10);
-            const result = await UserRepository.Register(name, email, hashedPassword);
+            const result = await UserRepository.Register(
+                name,
+                email,
+                hashedPassword
+            );
 
             result.token = Token.Create(result.idUser);
             return result;

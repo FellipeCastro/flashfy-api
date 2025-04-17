@@ -6,12 +6,18 @@ class UserController {
             const { name, email, password } = req.body;
 
             if (!name || !email || !password) {
-                return res.status(400).json({ error: "Todos os campos são obrigatórios." });
+                return res
+                    .status(400)
+                    .json({ error: "Todos os campos são obrigatórios." });
             }
 
             const formattedEmail = email.toLowerCase().trim();
 
-            const result = await UserService.Register(name, formattedEmail, password);
+            const result = await UserService.Register(
+                name,
+                formattedEmail,
+                password
+            );
             return res.status(201).json(result);
         } catch (error) {
             return res.status(400).json({ error: error.message });
@@ -23,7 +29,9 @@ class UserController {
             const { email, password } = req.body;
 
             if (!email || !password) {
-                return res.status(400).json({ error: "Todos os campos são obrigatórios." });
+                return res
+                    .status(400)
+                    .json({ error: "Todos os campos são obrigatórios." });
             }
 
             const formattedEmail = email.toLowerCase().trim();

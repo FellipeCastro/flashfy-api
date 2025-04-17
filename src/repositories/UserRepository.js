@@ -18,9 +18,10 @@ class UserRepository {
             const sql =
                 "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
             const result = await consult(sql, [name, email, password]);
-            const [user] = await consult("SELECT * FROM users WHERE idUser = ?", [
-                result.insertId,
-            ]);
+            const [user] = await consult(
+                "SELECT * FROM users WHERE idUser = ?",
+                [result.insertId]
+            );
             return user;
         } catch (error) {
             console.error("Erro ao registrar usuário: ", error.message);
@@ -30,7 +31,8 @@ class UserRepository {
 
     async Profile(idUser) {
         try {
-            const sql = "SELECT idUser, name, email FROM users WHERE idUser = ?";
+            const sql =
+                "SELECT idUser, name, email FROM users WHERE idUser = ?";
             const result = await consult(sql, [idUser]);
 
             return result.length > 0 ? result[0] : null;
