@@ -20,6 +20,28 @@ class UserService {
             throw new Error(error.message);
         }
     }
+
+    async Login(email, password) {
+        try {
+            const user = await UserRepository.ListByEmail(email);
+
+            if (!user) {
+                throw new Error("E-mail não cadastrado.");
+            }
+
+            if (!(await bcrypt.compare(password, user.password))) {
+                throw new Error("Senha incorreta.");
+            }
+
+            delete user.password;
+            user.token = Token.Create(user.idUser);
+
+            return user;
+        } catch (error) {
+            console.error("Erro ao fazer login: ", error.message);
+            throw new Error(error.message);
+        }
+    }
 }
 
 export default new UserService();

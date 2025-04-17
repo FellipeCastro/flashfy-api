@@ -17,6 +17,23 @@ class UserController {
             return res.status(400).json({ error: error.message });
         }
     }
+
+    async Login(req, res) {
+        try {
+            const { email, password } = req.body;
+
+            if (!email || !password) {
+                return res.status(400).json({ error: "Todos os campos são obrigatórios." });
+            }
+
+            const formattedEmail = email.toLowerCase().trim();
+
+            const result = await UserService.Login(formattedEmail, password);
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(401).json({ error: error.message });
+        }
+    }
 }
 
 export default new UserController();
