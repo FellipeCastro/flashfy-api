@@ -7,11 +7,24 @@ class SubjectController {
             const { subject } = req.body;
 
             if (!subject) {
-                return res.status(400).json({ error: "Todos os campos são obrigatórios." });
+                return res
+                    .status(400)
+                    .json({ error: "Todos os campos são obrigatórios." });
             }
 
             const result = await SubjectService.Create(idUser, subject);
             return res.status(201).json(result);
+        } catch (error) {
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
+    async List(req, res) {
+        try {
+            const idUser = req.idUser;
+
+            const result = await SubjectService.List(idUser);
+            return res.status(200).json(result);
         } catch (error) {
             return res.status(400).json({ error: error.message });
         }

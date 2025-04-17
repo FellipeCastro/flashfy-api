@@ -12,6 +12,17 @@ class SubjectRepository{
             throw new Error("Erro ao criar matéria");
         }
     }
+
+    async List(idUser) {
+        try {
+            const sql = "SELECT * FROM subjects WHERE idUser = ?";
+            const result = consult(sql, [idUser]);
+            return result;
+        } catch (error) {
+            console.error("Erro ao listas matérias: ", error.message);
+            throw new Error("Erro ao listas matérias");
+        }
+    }
 }
 
 export default new SubjectRepository();
