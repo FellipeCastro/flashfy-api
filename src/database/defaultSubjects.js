@@ -1,0 +1,15 @@
+export const defaultSubjects = [
+    { name: "Língua Portuguesa" },
+    { name: "Literatura" },
+    { name: "Língua Estrangeira (Inglês)" },
+    { name: "Língua Estrangeira (Espanhol)" },
+    { name: "Artes" },
+    { name: "Matemática" },
+    { name: "Biologia" },
+    { name: "Física" },
+    { name: "Química" },
+    { name: "História" },
+    { name: "Geografia" },
+    { name: "Filosofia" },
+    { name: "Sociologia" },
+];

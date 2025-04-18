@@ -24,7 +24,7 @@ class SubjectService {
     async Delete(idSubject) {
         try {
             return await SubjectRepository.Delete(idSubject);
-        } catch (error) {            
+        } catch (error) {
             console.error("Erro ao deletar matéria: ", error.message);
             throw new Error("Erro ao deletar matéria.");
         }

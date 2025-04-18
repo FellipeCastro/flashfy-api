@@ -1,11 +1,14 @@
 import { consult } from "../database/connection.js";
 
-class SubjectRepository{
+class SubjectRepository {
     async Create(idUser, subject) {
         try {
             const sql = "INSERT INTO subjects (idUser, subject) VALUES (?, ?)";
             const result = await consult(sql, [idUser, subject]);
-            const [insertSubject] = await consult("SELECT * FROM subjects WHERE idSubject = ?", [result.insertId]);
+            const [insertSubject] = await consult(
+                "SELECT * FROM subjects WHERE idSubject = ?",
+                [result.insertId]
+            );
             return insertSubject;
         } catch (error) {
             console.error("Erro ao criar matéria: ", error.message);
@@ -26,11 +29,12 @@ class SubjectRepository{
 
     async Delete(idSubject) {
         try {
-            const checkSql = "SELECT idSubject FROM subjects WHERE idSubject = ?";
+            const checkSql =
+                "SELECT idSubject FROM subjects WHERE idSubject = ?";
             const subject = await consult(checkSql, [idSubject]);
 
             if (subject.length === 0) {
-                throw new Error("Matéria não encontrada.")
+                throw new Error("Matéria não encontrada.");
             }
 
             const sql = "DELETE FROM subjects WHERE idSubject = ?";
