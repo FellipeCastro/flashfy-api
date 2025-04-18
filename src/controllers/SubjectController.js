@@ -29,6 +29,17 @@ class SubjectController {
             return res.status(400).json({ error: error.message });
         }
     }
+
+    async Delete(req, res) {
+        try {
+            const { idSubject } = req.params;
+
+            const result = await SubjectService.Delete(idSubject);
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(400).json({ error: error.message });
+        }
+    }
 }
 
 export default new SubjectController();

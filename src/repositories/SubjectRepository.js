@@ -9,7 +9,7 @@ class SubjectRepository{
             return insertSubject;
         } catch (error) {
             console.error("Erro ao criar matéria: ", error.message);
-            throw new Error("Erro ao criar matéria");
+            throw new Error("Erro ao criar matéria.");
         }
     }
 
@@ -20,7 +20,24 @@ class SubjectRepository{
             return result;
         } catch (error) {
             console.error("Erro ao listas matérias: ", error.message);
-            throw new Error("Erro ao listas matérias");
+            throw new Error("Erro ao listas matérias.");
+        }
+    }
+
+    async Delete(idSubject) {
+        try {
+            const checkSql = "SELECT idSubject FROM subjects WHERE idSubject = ?";
+            const subject = await consult(checkSql, [idSubject]);
+
+            if (subject.length === 0) {
+                throw new Error("Matéria não encontrada.")
+            }
+
+            const sql = "DELETE FROM subjects WHERE idSubject = ?";
+            await consult(sql, [idSubject]);
+        } catch (error) {
+            console.error("Erro ao deletar matéria: ", error.message);
+            throw new Error("Erro ao deletar matéria.");
         }
     }
 }

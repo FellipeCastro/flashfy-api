@@ -17,7 +17,16 @@ class SubjectService {
             return result;
         } catch (error) {
             console.error("Erro ao listas matérias: ", error.message);
-            throw new Error("Erro ao listas matérias");
+            throw new Error("Erro ao listas matérias.");
+        }
+    }
+
+    async Delete(idSubject) {
+        try {
+            return await SubjectRepository.Delete(idSubject);
+        } catch (error) {            
+            console.error("Erro ao deletar matéria: ", error.message);
+            throw new Error("Erro ao deletar matéria.");
         }
     }
 }
