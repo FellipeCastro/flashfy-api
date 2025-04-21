@@ -32,6 +32,18 @@ class FlashcardController {
             return res.status(500).json({ error: error.message });
         }
     }
+
+    async Delete(req, res) {
+        try {
+            const { idFlashcard } = req.params;
+            const idUser = req.idUser;
+            
+            const result = await FlashcardService.Delete(idUser, idFlashcard);
+            return res.status(204).json(result);
+        } catch (error) {
+            return res.status(500).json({ error: error.message });
+        }
+    }
 }
 
 export default new FlashcardController();

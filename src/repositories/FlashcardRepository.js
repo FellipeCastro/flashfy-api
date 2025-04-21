@@ -27,10 +27,29 @@ class FlashcardRepository {
         try {
             const sql = "SELECT * FROM flashcards WHERE idUser = ? AND idSubject = ?";
             const result = await consult(sql, [idUser, idSubject]);
-            return result;
+            return result; 
         } catch (error) {
             console.error("Erro ao listar flashcards: ", error.message);
             throw new Error("Erro ao listar flashcards.");
+        }
+    }
+
+    async Delete(idUser, idFlashcard) {
+        try {
+            const [flashcard] = await consult(
+                "SELECT idFlashcard FROM flashcards WHERE idFlashcard = ? AND idUser = ?",
+                [idFlashcard, idUser]
+            );
+            
+            if (!flashcard) {
+                throw new Error("Flashcard não encontrado.");
+            }
+
+            const sql = "DELETE FROM flashcards WHERE idFlashcard = ?";
+            await consult(sql, [idFlashcard]);
+        } catch (error) {
+            console.error("Erro ao deletar flashcard: ", error.message);
+            throw new Error("Erro ao deletar flashcard.");
         }
     }
 }

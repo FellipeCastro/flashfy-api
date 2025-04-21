@@ -20,6 +20,16 @@ class FlashcardService {
             throw new Error("Erro ao listar flashcards.");
         }
     }
+
+    async Delete(idUser, idFlashcard) {
+        try {
+            const result = await FlashcardRepository.Delete(idUser, idFlashcard);
+            return result;
+        } catch (error) {
+            console.error("Erro ao deletar flashcard: ", error.message);
+            throw new Error("Erro ao deletar flashcard.");
+        }
+    }
 }
 
 export default new FlashcardService();
