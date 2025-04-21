@@ -26,6 +26,7 @@ class UserService {
                 );
             });
 
+            delete result.password;
             result.token = Token.Create(result.idUser);
             return result;
         } catch (error) {
@@ -48,7 +49,6 @@ class UserService {
 
             delete user.password;
             user.token = Token.Create(user.idUser);
-
             return user;
         } catch (error) {
             console.error("Erro ao fazer login: ", error.message);
