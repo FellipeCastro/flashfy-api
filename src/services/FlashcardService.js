@@ -3,7 +3,13 @@ import FlashcardRepository from "../repositories/FlashcardRepository.js";
 class FlashcardService {
     async Create(idUser, idSubject, theme, question, answer) {
         try {
-            const result = await FlashcardRepository.Create(idUser, idSubject, theme, question, answer);
+            const result = await FlashcardRepository.Create(
+                idUser,
+                idSubject,
+                theme,
+                question,
+                answer
+            );
             return result;
         } catch (error) {
             console.error("Erro ao criar flashcard: ", error.message);
@@ -21,9 +27,36 @@ class FlashcardService {
         }
     }
 
+    async Review(idUser, idFlashcard, difficulty) {
+        try {
+            const daysToAdd = {
+                Fácil: 7,
+                Médio: 4,
+                Difícil: 1,
+            }[difficulty];
+
+            const nextReviewDate = new Date();
+            nextReviewDate.setDate(nextReviewDate.getDate() + daysToAdd);
+
+            const result = await FlashcardRepository.Review(
+                idUser,
+                idFlashcard,
+                difficulty,
+                nextReviewDate
+            );
+            return result;
+        } catch (error) {
+            console.error("Erro ao atualizar revisão: ", error.message);
+            throw new Error("Erro ao atualizar revisão.");
+        }
+    }
+
     async Delete(idUser, idFlashcard) {
         try {
-            const result = await FlashcardRepository.Delete(idUser, idFlashcard);
+            const result = await FlashcardRepository.Delete(
+                idUser,
+                idFlashcard
+            );
             return result;
         } catch (error) {
             console.error("Erro ao deletar flashcard: ", error.message);

@@ -34,6 +34,32 @@ class FlashcardRepository {
         }
     }
 
+    async Review(idUser, idFlashcard, difficulty, nextReviewDate) {
+        try {
+            const [flashcard] = await consult(
+                "SELECT * FROM flashcards WHERE idFlashcard = ? AND idUser = ?",
+                [idFlashcard, idUser]
+            );
+            
+            if (!flashcard) {
+                throw new Error("Flashcard não encontrado.");
+            }
+
+            const sql = "UPDATE flashcards SET difficulty = ?, lastReviewedDate = NOW(), nextReviewDate = ? WHERE idFlashcard = ? AND idUser = ?";
+            
+            await consult(sql, [difficulty, nextReviewDate, idFlashcard, idUser]);
+            
+            const [updatedFlashcard] = await consult(
+                "SELECT * FROM flashcards WHERE idFlashcard = ?", 
+                [idFlashcard]
+            );
+            return updatedFlashcard;
+        } catch (error) {
+            console.error("Erro ao atualizar flashcard: ", error.message);
+            throw new Error("Erro ao atualizar flashcard.");
+        }
+    }
+
     async Delete(idUser, idFlashcard) {
         try {
             const [flashcard] = await consult(
