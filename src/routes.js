@@ -19,5 +19,6 @@ router.delete("/subjects/:idSubject", Token.Validate, SubjectController.Delete);
 
 // Flashcards
 router.post("/flashcards/:idSubject", Token.Validate, FlashcardController.Create);
+router.get("/flashcards/:idSubject", Token.Validate, FlashcardController.List);
 
 export default router;
