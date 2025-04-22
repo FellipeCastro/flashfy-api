@@ -40,6 +40,23 @@ class FlashcardController {
         }
     }
 
+        async ListByTheme(req, res) {
+            try {
+                const { theme } = req.query; 
+                const { idSubject } = req.params;
+                const idUser = req.idUser;
+                
+                if (!theme) {
+                    return res.status(400).json({ error: "o tema é obrigatório." });
+                }
+
+                const result = await FlashcardService.ListByTheme(idUser, idSubject, theme);
+                return res.status(200).json(result);
+            } catch (error) {
+                return res.status(500).json({ error: error.message });
+            }
+        }
+
     async Review(req, res) {
         try {
             const { idFlashcard } = req.params;

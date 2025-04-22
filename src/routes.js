@@ -20,6 +20,7 @@ router.delete("/subjects/:idSubject", Token.Validate, SubjectController.Delete);
 // Flashcards
 router.post("/flashcards/:idSubject", Token.Validate, FlashcardController.Create);
 router.get("/flashcards/:idSubject", Token.Validate, FlashcardController.List);
+router.get("/flashcards/:idSubject/filter", Token.Validate, FlashcardController.ListByTheme);
 router.put("/flashcards/:idFlashcard", Token.Validate, FlashcardController.Review);
 router.delete("/flashcards/:idFlashcard", Token.Validate, FlashcardController.Delete);
 

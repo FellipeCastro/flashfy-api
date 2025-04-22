@@ -27,6 +27,19 @@ class FlashcardService {
         }
     }
 
+        async ListByTheme(idUser, idSubject, theme) {
+            try {
+                const result = await FlashcardRepository.ListByTheme(idUser, idSubject, theme);
+                return result;
+            } catch (error) {
+                console.error(
+                    "Erro ao filtrar flashcards por tema: ",
+                    error.message
+                );
+                throw new Error("Erro ao filtrar flashcards por tema.");
+            }
+        }
+
     async Review(idUser, idFlashcard, difficulty) {
         try {
             const daysToAdd = {
