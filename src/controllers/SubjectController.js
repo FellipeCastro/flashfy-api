@@ -4,15 +4,15 @@ class SubjectController {
     async Create(req, res) {
         try {
             const idUser = req.idUser;
-            const { subject } = req.body;
+            const { name, color } = req.body;
 
-            if (!subject) {
+            if (!name || !color) {
                 return res
                     .status(400)
                     .json({ error: "Todos os campos são obrigatórios." });
             }
 
-            const result = await SubjectService.Create(idUser, subject);
+            const result = await SubjectService.Create(idUser, name, color);
             return res.status(201).json(result);
         } catch (error) {
             return res.status(400).json({ error: error.message });

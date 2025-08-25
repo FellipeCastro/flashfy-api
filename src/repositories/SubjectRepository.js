@@ -1,10 +1,10 @@
 import { consult } from "../database/connection.js";
 
 class SubjectRepository {
-    async Create(idUser, subject) {
+    async Create(idUser, name, color) {
         try {
-            const sql = "INSERT INTO subjects (idUser, subject) VALUES (?, ?)";
-            const result = await consult(sql, [idUser, subject]);
+            const sql = "INSERT INTO subjects (idUser, name, color) VALUES (?, ?, ?)";
+            const result = await consult(sql, [idUser, name, color]);
             const [insertSubject] = await consult(
                 "SELECT * FROM subjects WHERE idSubject = ?",
                 [result.insertId]

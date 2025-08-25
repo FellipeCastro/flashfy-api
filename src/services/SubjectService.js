@@ -1,9 +1,9 @@
 import SubjectRepository from "../repositories/SubjectRepository.js";
 
 class SubjectService {
-    async Create(idUser, subject) {
+    async Create(idUser, name, color) {
         try {
-            const result = await SubjectRepository.Create(idUser, subject);
+            const result = await SubjectRepository.Create(idUser, name, color);
             return result;
         } catch (error) {
             console.error("Erro ao criar matéria: ", error.message);

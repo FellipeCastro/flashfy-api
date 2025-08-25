@@ -1,8 +1,8 @@
 import bcrypt from "bcrypt";
 import Token from "../token.js";
 import { defaultSubjects } from "../database/defaultSubjects.js";
+import SubjectService from "./SubjectService.js";
 import UserRepository from "../repositories/UserRepository.js";
-import SubjectRepository from "../repositories/SubjectRepository.js";
 
 class UserService {
     async Register(name, email, password) {
@@ -20,9 +20,10 @@ class UserService {
             );
 
             defaultSubjects.forEach(async (subject) => {
-                return await SubjectRepository.Create(
+                return await SubjectService.Create(
                     result.idUser,
-                    subject.name
+                    subject.name,
+                    subject.color
                 );
             });
 
