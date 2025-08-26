@@ -13,7 +13,7 @@ class DeckService {
 
     async List(idUser) {
         try {
-            const result = await SubjectRepository.List(idUser);
+            const result = await DeckRepository.List(idUser);
             return result;
         } catch (error) {
             console.error("Erro ao listas matérias: ", error.message);
@@ -21,12 +21,12 @@ class DeckService {
         }
     }
 
-    async Delete(idSubject) {
+    async Delete(idDeck) {
         try {
-            return await SubjectRepository.Delete(idSubject);
+            return await DeckRepository.Delete(idDeck);
         } catch (error) {
-            console.error("Erro ao deletar matéria: ", error.message);
-            throw new Error("Erro ao deletar matéria.");
+            console.error("Erro ao deletar deck: ", error.message);
+            throw new Error("Erro ao deletar deck.");
         }
     }
 }

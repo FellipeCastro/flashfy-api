@@ -23,7 +23,7 @@ class DeckController {
         try {
             const idUser = req.idUser;
 
-            const result = await SubjectService.List(idUser);
+            const result = await DeckService.List(idUser);
             return res.status(200).json(result);
         } catch (error) {
             return res.status(400).json({ error: error.message });
@@ -32,9 +32,9 @@ class DeckController {
 
     async Delete(req, res) {
         try {
-            const { idSubject } = req.params;
+            const { idDeck } = req.params;
 
-            const result = await SubjectService.Delete(idSubject);
+            const result = await DeckService.Delete(idDeck);
             return res.status(200).json(result);
         } catch (error) {
             return res.status(400).json({ error: error.message });

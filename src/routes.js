@@ -19,5 +19,7 @@ router.delete("/subjects/:idSubject", Token.Validate, SubjectController.Delete);
 
 // Decks
 router.post("/decks", Token.Validate, DeckController.Create);
+router.get("/decks", Token.Validate, DeckController.List);
+router.delete("/decks/:idDeck", Token.Validate, DeckController.Delete);
 
 export default router;
