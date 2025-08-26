@@ -4,6 +4,7 @@ import Token from "./token.js";
 import UserController from "./controllers/UserController.js";
 import SubjectController from "./controllers/SubjectController.js";
 import DeckController from "./controllers/DeckController.js";
+import CardController from "./controllers/CardController.js";
 
 const router = Router();
 
@@ -21,5 +22,10 @@ router.delete("/subjects/:idSubject", Token.Validate, SubjectController.Delete);
 router.post("/decks", Token.Validate, DeckController.Create);
 router.get("/decks", Token.Validate, DeckController.List);
 router.delete("/decks/:idDeck", Token.Validate, DeckController.Delete);
+
+// Cards
+router.post("/cards", Token.Validate, CardController.Create);
+router.get("/cards/:idDeck", Token.Validate, CardController.List);
+router.delete("/cards/:idCard", Token.Validate, CardController.Delete);
 
 export default router;
