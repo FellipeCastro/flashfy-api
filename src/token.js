@@ -3,7 +3,7 @@ import "dotenv/config";
 
 const secret = process.env.TOKEN_SECRET;
 
-class Token {
+class token {
     Create(idUser) {
         const token = jwt.sign({ idUser }, secret, {
             expiresIn: "7d",
@@ -33,4 +33,4 @@ class Token {
     }
 }
 
-export default new Token();
+export default new token();

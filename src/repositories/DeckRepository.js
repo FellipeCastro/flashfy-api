@@ -52,6 +52,23 @@ class DeckRepository {
             throw new Error("Erro ao deletar deck.");
         }
     }
+
+    async CountCards(idDeck, idUser) {
+        try {
+            const sql = `
+            SELECT COUNT(c.idCard) as cards
+            FROM cards c
+            INNER JOIN decks d ON c.idDeck = d.idDeck
+            WHERE d.idDeck = ?
+            AND d.idUser = ?
+            `;
+            const result = await consult(sql, [idDeck, idUser]);
+            return result;
+        } catch (error) {
+            console.error("Erro ao contar cards: ", error.message);
+            throw new Error("Erro ao contar cards.");
+        }
+    }
 }
 
 export default new DeckRepository();

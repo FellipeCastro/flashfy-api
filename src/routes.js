@@ -1,5 +1,5 @@
 import { Router } from "express";
-import Token from "./token.js";
+import token from "./token.js";
 
 import UserController from "./controllers/UserController.js";
 import SubjectController from "./controllers/SubjectController.js";
@@ -11,21 +11,21 @@ const router = Router();
 // Users
 router.post("/users/register", UserController.Register);
 router.post("/users/login", UserController.Login);
-router.get("/users/profile", Token.Validate, UserController.Profile);
+router.get("/users/profile", token.Validate, UserController.Profile);
 
 // Subjects
-router.post("/subjects", Token.Validate, SubjectController.Create);
-router.get("/subjects", Token.Validate, SubjectController.List);
-router.delete("/subjects/:idSubject", Token.Validate, SubjectController.Delete);
+router.post("/subjects", token.Validate, SubjectController.Create);
+router.get("/subjects", token.Validate, SubjectController.List);
+router.delete("/subjects/:idSubject", token.Validate, SubjectController.Delete);
 
 // Decks
-router.post("/decks", Token.Validate, DeckController.Create);
-router.get("/decks", Token.Validate, DeckController.List);
-router.delete("/decks/:idDeck", Token.Validate, DeckController.Delete);
+router.post("/decks", token.Validate, DeckController.Create);
+router.get("/decks", token.Validate, DeckController.List);
+router.delete("/decks/:idDeck", token.Validate, DeckController.Delete);
 
 // Cards
-router.post("/cards", Token.Validate, CardController.Create);
-router.get("/cards/:idDeck", Token.Validate, CardController.List);
-router.delete("/cards/:idCard", Token.Validate, CardController.Delete);
+router.post("/cards", token.Validate, CardController.Create);
+router.get("/cards/:idDeck", token.Validate, CardController.List);
+router.delete("/cards/:idCard", token.Validate, CardController.Delete);
 
 export default router;
