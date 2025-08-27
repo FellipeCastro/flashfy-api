@@ -27,5 +27,6 @@ router.delete("/decks/:idDeck", token.Validate, DeckController.Delete);
 router.post("/cards", token.Validate, CardController.Create);
 router.get("/cards/:idDeck", token.Validate, CardController.List);
 router.delete("/cards/:idCard", token.Validate, CardController.Delete);
+router.put("/cards/:idCard", token.Validate, CardController.UpdateDifficulty);
 
 export default router;

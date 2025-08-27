@@ -3,7 +3,11 @@ import CardRepository from "../repositories/CardRepository.js";
 class CardService {
     async Create(idDeck, question, answer) {
         try {
-            const result = await CardRepository.Create(idDeck, question, answer);
+            const result = await CardRepository.Create(
+                idDeck,
+                question,
+                answer
+            );
             return result;
         } catch (error) {
             console.error("Erro ao criar card: ", error.message);
@@ -27,6 +31,15 @@ class CardService {
         } catch (error) {
             console.error("Erro ao deletar card: ", error.message);
             throw new Error("Erro ao deletar card.");
+        }
+    }
+
+    async UpdateDifficulty(difficulty, idCard) {
+        try {
+            return await CardRepository.UpdateDifficulty(difficulty, idCard);
+        } catch (error) {
+            console.error("Erro ao atualizar dificuldade do card: ", error.message);
+            throw new Error("Erro ao atualizar dificuldade do card.");
         }
     }
 }

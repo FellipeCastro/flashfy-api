@@ -39,6 +39,18 @@ class CardController {
             return res.status(400).json({ error: error.message });
         }
     }
+
+    async UpdateDifficulty(req, res) {
+        try {
+            const { idCard } = req.params;
+            const { difficulty } = req.body;
+
+            const result = await CardService.UpdateDifficulty(difficulty, idCard);
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(400).json({ error: error.message });
+        }
+    }
 }
 
 export default new CardController();
