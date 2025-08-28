@@ -1,6 +1,5 @@
 import { Router } from "express";
 import token from "./token.js";
-
 import UserController from "./controllers/UserController.js";
 import SubjectController from "./controllers/SubjectController.js";
 import DeckController from "./controllers/DeckController.js";
@@ -22,6 +21,7 @@ router.delete("/subjects/:idSubject", token.Validate, SubjectController.Delete);
 router.post("/decks", token.Validate, DeckController.Create);
 router.get("/decks", token.Validate, DeckController.List);
 router.delete("/decks/:idDeck", token.Validate, DeckController.Delete);
+router.put("/decks/:idDeck", token.Validate, DeckController.UpdateNextReview);
 
 // Cards
 router.post("/cards", token.Validate, CardController.Create);

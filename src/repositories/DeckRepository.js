@@ -37,8 +37,7 @@ class DeckRepository {
 
     async Delete(idDeck) {
         try {
-            const checkSql =
-                "SELECT idDeck FROM decks WHERE idDeck = ?";
+            const checkSql = "SELECT idDeck FROM decks WHERE idDeck = ?";
             const deck = await consult(checkSql, [idDeck]);
 
             if (deck.length === 0) {
@@ -67,6 +66,23 @@ class DeckRepository {
         } catch (error) {
             console.error("Erro ao contar cards: ", error.message);
             throw new Error("Erro ao contar cards.");
+        }
+    }
+
+    async updateNextReview(nextReview, idDeck) {
+        try {
+            const checkSql = "SELECT idDeck FROM decks WHERE idDeck = ?";
+            const deck = await consult(checkSql, [idDeck]);
+
+            if (deck.length === 0) {
+                throw new Error("Deck não encontrado.");
+            }
+            
+            const sql = "UPDATE decks SET nextReview = ? WHERE idDeck = ?";
+            await consult(sql, [nextReview, idDeck]);
+        } catch (error) {
+            console.error("Erro ao atualizar data da próxima revisão do deck: ", error.message);
+            throw new Error("Erro ao atualizar data da próxima revisão do deck.");
         }
     }
 }

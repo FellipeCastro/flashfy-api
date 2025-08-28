@@ -1,3 +1,4 @@
+import CardRepository from "../repositories/CardRepository.js";
 import DeckRepository from "../repositories/DeckRepository.js";
 
 class DeckService {
@@ -44,8 +45,8 @@ class DeckService {
 
             return result;
         } catch (error) {
-            console.error("Erro ao listas matérias: ", error.message);
-            throw new Error("Erro ao listas matérias.");
+            console.error("Erro ao listar decks: ", error.message);
+            throw new Error("Erro ao listar decks.");
         }
     }
 
@@ -55,6 +56,50 @@ class DeckService {
         } catch (error) {
             console.error("Erro ao deletar deck: ", error.message);
             throw new Error("Erro ao deletar deck.");
+        }
+    }
+
+    async UpdateNextReview(idDeck) {
+        try {
+            const cards = await CardRepository.List(idDeck);
+            const difficulties = await Promise.all(
+                cards.map(async (card) => card.difficulty || 4)
+            );
+            const average = Math.round(
+                difficulties.reduce((sum, value) => sum + value, 0) /
+                    difficulties.length
+            );
+            const daysToAdd =
+                {
+                    1: 7,
+                    2: 5,
+                    3: 3,
+                    4: 1,
+                }[average] || 0;
+            const currentDate = new Date();
+            const newReviewDate = new Date(currentDate);
+            newReviewDate.setDate(currentDate.getDate() + daysToAdd);
+            const formattedDate = newReviewDate.toISOString().split("T")[0];
+
+            try {
+                const result = await DeckRepository.updateNextReview(
+                    formattedDate,
+                    idDeck
+                );
+                return result;
+            } catch (error) {
+                console.error(
+                    "Erro ao atualizar data da próxima revisão: ",
+                    error.message
+                );
+                throw new Error("Erro ao atualizar data da próxima revisão.");
+            }
+        } catch (error) {
+            console.error(
+                "Erro ao calcular data da próxima revisão: ",
+                error.message
+            );
+            throw new Error("Erro ao calcular data da próxima revisão.");
         }
     }
 }
