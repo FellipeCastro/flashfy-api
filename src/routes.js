@@ -4,6 +4,7 @@ import UserController from "./controllers/UserController.js";
 import SubjectController from "./controllers/SubjectController.js";
 import DeckController from "./controllers/DeckController.js";
 import CardController from "./controllers/CardController.js";
+import ProgressController from "./controllers/ProgressController.js";
 
 const router = Router();
 
@@ -21,12 +22,16 @@ router.delete("/subjects/:idSubject", token.Validate, SubjectController.Delete);
 router.post("/decks", token.Validate, DeckController.Create);
 router.get("/decks", token.Validate, DeckController.List);
 router.delete("/decks/:idDeck", token.Validate, DeckController.Delete);
-router.put("/decks/:idDeck", token.Validate, DeckController.UpdateNextReview);
+router.put("/decks/next-review/:idDeck", token.Validate, DeckController.UpdateNextReview);
 
 // Cards
 router.post("/cards", token.Validate, CardController.Create);
 router.get("/cards/:idDeck", token.Validate, CardController.List);
 router.delete("/cards/:idCard", token.Validate, CardController.Delete);
-router.put("/cards/:idCard", token.Validate, CardController.UpdateDifficulty);
+router.put("/cards/difficulty/:idCard", token.Validate, CardController.UpdateDifficulty);
+
+// Progress 
+router.put("/progress/consecutive-days", token.Validate, ProgressController.UpdateConsecutiveDays);
+router.put("/progress/studied-decks", token.Validate, ProgressController.IncrementStudiedDecks);
 
 export default router;
