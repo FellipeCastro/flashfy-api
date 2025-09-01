@@ -58,6 +58,61 @@ class ProgressService {
         }
     }
 
+    async IncrementStudiedDecks(idUser) {
+        try {
+            // Primeiro verificar se é um novo dia
+            const isNewDay = await this.isNewDay(idUser);
+
+            let studiedDecksValue;
+
+            if (isNewDay) {
+                // Se for novo dia, resetar para 1
+                studiedDecksValue = 1;
+                // Atualizar a data do último estudo para hoje
+                const today = new Date().toISOString().split("T")[0];
+                await ProgressRepository.UpdateLastStudyDate(today, idUser);
+            } else {
+                // Se não for novo dia, incrementar normalmente
+                // Primeiro buscar o valor atual
+                const progress = await ProgressRepository.FindByUserId(idUser);
+                studiedDecksValue = progress.studiedDecks + 1;
+            }
+
+            // Atualizar no banco de dados
+            const result = await ProgressRepository.SetStudiedDecks(
+                studiedDecksValue,
+                idUser
+            );
+            return result;
+        } catch (error) {
+            console.error("Erro ao atualizar decks estudados: ", error.message);
+            throw new Error("Erro ao atualizar decks estudados.");
+        }
+    }
+
+    async isNewDay(idUser) {
+        try {
+            // Buscar o progresso do usuário
+            const progress = await ProgressRepository.FindByUserId(idUser);
+
+            // Se não existir registro, é considerado novo dia
+            if (!progress || !progress.lastStudyDate) {
+                return true;
+            }
+
+            const today = new Date().toISOString().split("T")[0];
+            const lastStudyDate = new Date(progress.lastStudyDate)
+                .toISOString()
+                .split("T")[0];
+
+            // Se a última data de estudo for diferente de hoje, é novo dia
+            return lastStudyDate !== today;
+        } catch (error) {
+            console.error("Erro ao verificar se é novo dia: ", error.message);
+            throw new Error("Erro ao verificar se é novo dia.");
+        }
+    }
+
     getMotivationalMessage(days) {
         if (days === 1) return "Bom começo! Continue assim!";
         if (days === 3) return "3 dias seguidos! Você está no caminho certo!";
@@ -67,18 +122,6 @@ class ProgressService {
         if (days >= 100) return `${days} dias! Lenda viva!`;
 
         return `Continue a jornada! ${days} dias consecutivos!`;
-    }
-
-    async IncrementStudiedDecks(idUser) {
-        try {
-            const result = await ProgressRepository.IncrementStudiedDecks(
-                idUser
-            );
-            return result;
-        } catch (error) {
-            console.error("Erro ao atualizar decks estudados: ", error.message);
-            throw new Error("Erro ao atualizar decks estudados.");
-        }
     }
 }
 

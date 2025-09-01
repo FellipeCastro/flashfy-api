@@ -58,11 +58,11 @@ class ProgressRepository {
         }
     }
 
-    async IncrementStudiedDecks(idUser) {
+    async SetStudiedDecks(studiedDecks, idUser) {
         try {
             const sql =
-                "UPDATE progress SET studiedDecks = studiedDecks + 1 WHERE idUser = ?";
-            await consult(sql, [idUser]);
+                "UPDATE progress SET studiedDecks = ? WHERE idUser = ?";
+            await consult(sql, [studiedDecks, idUser]);
         } catch (error) {
             console.error(
                 "Erro ao atualizar decks estudados: ",
