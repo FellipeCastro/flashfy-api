@@ -41,14 +41,9 @@ router.put(
 // Progress
 router.get("/progress", token.Validate, ProgressController.List);
 router.put(
-    "/progress/consecutive-days",
+    "/progress/study-deck",
     token.Validate,
-    ProgressController.UpdateConsecutiveDays
-);
-router.put(
-    "/progress/studied-decks",
-    token.Validate,
-    ProgressController.IncrementStudiedDecks
+    ProgressController.StudyDeck
 );
 
 export default router;

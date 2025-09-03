@@ -6,13 +6,12 @@ class ProgressService {
     }
 
     setupDailyCheck() {
-        // Verificação periódica (opcional - para logs)
         setInterval(() => {
             console.log(
                 "⏰ Verificação diária ativa - " +
                     new Date().toLocaleTimeString()
             );
-        }, 1000 * 60 * 60); // A cada hora
+        }, 1000 * 60 * 60);
     }
 
     async List(idUser) {
@@ -107,28 +106,27 @@ class ProgressService {
         }
     }
 
-    async IncrementStudiedDecks(idUser) {
+    async StudyDeck(idUser) {
         try {
+            // 1. Primeiro verificar e resetar se for novo dia
             const isNewDay = await this.checkAndResetForNewDay(idUser);
 
             let studiedDecksValue;
 
             if (isNewDay) {
+                // 2. Se for novo dia, começar com 1
                 studiedDecksValue = 1;
             } else {
+                // 3. Se não for novo dia, incrementar
                 const progress = await ProgressRepository.FindByUserId(idUser);
                 studiedDecksValue = (progress.studiedDecks || 0) + 1;
             }
 
+            // 4. Atualizar studiedDecks no banco
             await ProgressRepository.SetStudiedDecks(studiedDecksValue, idUser);
 
-            return {
-                studiedDecks: studiedDecksValue,
-                isNewDay: isNewDay,
-                message: isNewDay
-                    ? "Novo dia! Primeiro deck estudado."
-                    : `Deck estudado! Total hoje: ${studiedDecksValue}`,
-            };
+            // 5. Atualizar dias consecutivos
+            await this.UpdateConsecutiveDays(idUser);
         } catch (error) {
             console.error("Erro ao atualizar decks estudados: ", error.message);
             throw new Error("Erro ao atualizar decks estudados.");
@@ -141,12 +139,15 @@ class ProgressService {
 
             if (isNewDay) {
                 const today = new Date().toISOString().split("T")[0];
+                // 1. Resetar studiedDecks para 0
                 await ProgressRepository.ResetStudiedDecksForNewDay(
                     idUser,
                     today
                 );
+                // 2. Atualizar dias consecutivos
+                await this.UpdateConsecutiveDays(idUser);
                 console.log(
-                    `📅 Novo dia! studiedDecks resetado para 0 para usuário ${idUser}`
+                    `📅 Novo dia! Reset realizado para usuário ${idUser}`
                 );
             }
 
