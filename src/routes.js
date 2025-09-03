@@ -22,16 +22,33 @@ router.delete("/subjects/:idSubject", token.Validate, SubjectController.Delete);
 router.post("/decks", token.Validate, DeckController.Create);
 router.get("/decks", token.Validate, DeckController.List);
 router.delete("/decks/:idDeck", token.Validate, DeckController.Delete);
-router.put("/decks/next-review/:idDeck", token.Validate, DeckController.UpdateNextReview);
+router.put(
+    "/decks/next-review/:idDeck",
+    token.Validate,
+    DeckController.UpdateNextReview
+);
 
 // Cards
 router.post("/cards", token.Validate, CardController.Create);
 router.get("/cards/:idDeck", token.Validate, CardController.List);
 router.delete("/cards/:idCard", token.Validate, CardController.Delete);
-router.put("/cards/difficulty/:idCard", token.Validate, CardController.UpdateDifficulty);
+router.put(
+    "/cards/difficulty/:idCard",
+    token.Validate,
+    CardController.UpdateDifficulty
+);
 
-// Progress 
-router.put("/progress/consecutive-days", token.Validate, ProgressController.UpdateConsecutiveDays);
-router.put("/progress/studied-decks", token.Validate, ProgressController.IncrementStudiedDecks);
+// Progress
+router.get("/progress", token.Validate, ProgressController.List);
+router.put(
+    "/progress/consecutive-days",
+    token.Validate,
+    ProgressController.UpdateConsecutiveDays
+);
+router.put(
+    "/progress/studied-decks",
+    token.Validate,
+    ProgressController.IncrementStudiedDecks
+);
 
 export default router;

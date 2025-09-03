@@ -1,11 +1,23 @@
 import { consult } from "../database/connection.js";
 
 class ProgressRepository {
+    async List(idUser) {
+        try {
+            const sql =
+                "SELECT consecutiveDays, decksToStudy, studiedDecks FROM progress WHERE idUser = ?";
+            const result = await consult(sql, [idUser]);
+            return result[0];
+        } catch (error) {
+            console.error("Erro ao listar progresso: ", error.message);
+            throw new Error("Erro ao listar progresso.");
+        }
+    }
+
     async FindByUserId(idUser) {
         try {
             const sql = "SELECT * FROM progress WHERE idUser = ?";
             const result = await consult(sql, [idUser]);
-            return result[0]; 
+            return result[0];
         } catch (error) {
             console.error(
                 "Erro ao buscar progresso do usuário: ",
@@ -60,15 +72,61 @@ class ProgressRepository {
 
     async SetStudiedDecks(studiedDecks, idUser) {
         try {
-            const sql =
-                "UPDATE progress SET studiedDecks = ? WHERE idUser = ?";
+            const sql = "UPDATE progress SET studiedDecks = ? WHERE idUser = ?";
             await consult(sql, [studiedDecks, idUser]);
         } catch (error) {
+            console.error("Erro ao atualizar decks estudados: ", error.message);
+            throw new Error("Erro ao atualizar decks estudados.");
+        }
+    }
+
+    async getDecksToStudy(idUser) {
+        try {
+            const sql = `
+                SELECT COUNT(*) as decksToStudy 
+                FROM decks 
+                WHERE nextReview <= CURDATE() 
+                AND idUser = 1
+            `;
+            const result = await consult(sql, [idUser]);
+            return result[0].decksToStudy;
+        } catch (error) {
+            console.error("Erro ao conatr decks para estudar: ", error.message);
+            throw new Error("Erro ao conatr decks para estudar.");
+        }
+    }
+
+    async setDecksToStudy(studiedDecks, idUser) {
+        try {
+            const sql = "UPDATE progress SET studiedDecks = ? WHERE idUser = ?";
+            await consult(sql, [studiedDecks, idUser]);
+        } catch (error) {
+            console.error("Erro ao atualizar decks estudados: ", error.message);
+            throw new Error("Erro ao atualizar decks estudados.");
+        }
+    }
+
+    async ResetStudiedDecks(idUser) {
+        try {
+            const sql = "UPDATE progress SET studiedDecks = 0 WHERE idUser = ?";
+            await consult(sql, [idUser]);
+        } catch (error) {
+            console.error("Erro ao resetar studiedDecks: ", error.message);
+            throw new Error("Erro ao resetar studiedDecks.");
+        }
+    }
+
+    async ResetStudiedDecksForNewDay(idUser, today) {
+        try {
+            const sql =
+                "UPDATE progress SET studiedDecks = 0, lastStudyDate = ? WHERE idUser = ?";
+            await consult(sql, [today, idUser]);
+        } catch (error) {
             console.error(
-                "Erro ao atualizar decks estudados: ",
+                "Erro ao resetar studiedDecks para novo dia: ",
                 error.message
             );
-            throw new Error("Erro ao atualizar decks estudados.");
+            throw new Error("Erro ao resetar studiedDecks para novo dia.");
         }
     }
 }

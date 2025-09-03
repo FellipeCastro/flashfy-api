@@ -1,6 +1,17 @@
 import ProgressService from "../services/ProgressService.js";
 
 class ProgressController {
+    async List(req, res) {
+        try {
+            const idUser = req.idUser;
+
+            const result = await ProgressService.List(idUser);
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
     async UpdateConsecutiveDays(req, res) {
         try {
             const idUser = req.idUser;
