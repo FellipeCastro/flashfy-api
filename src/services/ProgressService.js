@@ -67,22 +67,37 @@ class ProgressService {
             }
 
             const today = new Date().toISOString().split("T")[0];
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayFormatted = yesterday.toISOString().split("T")[0];
 
-            let newConsecutiveDays = progress.consecutiveDays || 0;
+            // Se não tem data de último estudo, é o primeiro dia
+            if (!progress.lastStudyDate) {
+                await ProgressRepository.UpdateConsecutiveDays(
+                    1,
+                    today,
+                    idUser
+                );
+                return {
+                    consecutiveDays: 1,
+                    lastStudyDate: today,
+                };
+            }
 
-            if (progress.lastStudyDate) {
-                const lastDate = new Date(progress.lastStudyDate);
-                const lastDateFormatted = lastDate.toISOString().split("T")[0];
+            const lastDate = new Date(progress.lastStudyDate);
+            const lastDateFormatted = lastDate.toISOString().split("T")[0];
 
-                if (lastDateFormatted === yesterdayFormatted) {
-                    newConsecutiveDays = (progress.consecutiveDays || 0) + 1;
-                } else if (lastDateFormatted !== today) {
-                    newConsecutiveDays = 1;
-                }
+            // Calcular diferença em dias
+            const diffTime = new Date(today) - new Date(lastDateFormatted);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            let newConsecutiveDays;
+
+            if (diffDays === 1) {
+                // Estudou ontem → incrementa
+                newConsecutiveDays = (progress.consecutiveDays || 0) + 1;
+            } else if (diffDays === 0) {
+                // Mesmo dia → mantém
+                newConsecutiveDays = progress.consecutiveDays || 0;
             } else {
+                // Mais de 1 dia de diferença → reset para 1
                 newConsecutiveDays = 1;
             }
 
@@ -95,7 +110,6 @@ class ProgressService {
             return {
                 consecutiveDays: newConsecutiveDays,
                 lastStudyDate: today,
-                message: this.getMotivationalMessage(newConsecutiveDays),
             };
         } catch (error) {
             console.error(
@@ -108,7 +122,7 @@ class ProgressService {
 
     async StudyDeck(idUser) {
         try {
-            // 1. Primeiro verificar e resetar se for novo dia
+            // 1. Primeiro verificar e resetar studiedDecks se for novo dia
             const isNewDay = await this.checkAndResetForNewDay(idUser);
 
             let studiedDecksValue;
@@ -125,8 +139,14 @@ class ProgressService {
             // 4. Atualizar studiedDecks no banco
             await ProgressRepository.SetStudiedDecks(studiedDecksValue, idUser);
 
-            // 5. Atualizar dias consecutivos
-            await this.UpdateConsecutiveDays(idUser);
+            // 5. Atualizar dias consecutivos (apenas se for novo dia)
+            if (isNewDay) {
+                await this.UpdateConsecutiveDays(idUser);
+            }
+
+            console.log(
+                `✅ Deck estudado - User: ${idUser}, Estudados: ${studiedDecksValue}, Novo dia: ${isNewDay}`
+            );
         } catch (error) {
             console.error("Erro ao atualizar decks estudados: ", error.message);
             throw new Error("Erro ao atualizar decks estudados.");
@@ -139,13 +159,11 @@ class ProgressService {
 
             if (isNewDay) {
                 const today = new Date().toISOString().split("T")[0];
-                // 1. Resetar studiedDecks para 0
+                // Resetar studiedDecks para 0 (o StudyDeck vai setar para 1 depois)
                 await ProgressRepository.ResetStudiedDecksForNewDay(
                     idUser,
                     today
                 );
-                // 2. Atualizar dias consecutivos
-                await this.UpdateConsecutiveDays(idUser);
                 console.log(
                     `📅 Novo dia! Reset realizado para usuário ${idUser}`
                 );
