@@ -22,13 +22,12 @@ class DeckService {
             const result = await Promise.all(
                 decks.map(async (deck) => {
                     try {
-                        const countResult = await DeckRepository.CountCards(
-                            deck.idDeck,
-                            idUser
+                        const cardsResult = await CardRepository.List(
+                            deck.idDeck
                         );
                         return {
                             ...deck,
-                            cards: countResult[0]?.cards || 0,
+                            cards: cardsResult,
                         };
                     } catch (error) {
                         console.error(
