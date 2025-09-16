@@ -4,33 +4,24 @@ class ProgressService {
     async List(idUser) {
         try {
             // Primeiro verificar e resetar se for novo dia
-            await this.checkAndResetForNewDay(idUser);
+            await this.CheckAndResetForNewDay(idUser);
 
             // Depois buscar os dados atualizados
             let progress = await ProgressRepository.FindByUserId(idUser);
 
             if (!progress) {
                 await ProgressRepository.Create(idUser);
-                progress = {
-                    consecutiveDays: 0,
-                    studiedDecks: 0,
-                    lastStudyDate: null,
-                };
+                progress = await ProgressRepository.FindByUserId(idUser);
             }
 
-            let decksToStudy = 0;
-            try {
-                decksToStudy = await ProgressRepository.getDecksToStudy(idUser);
-            } catch (error) {
-                console.warn("Método getDecksToStudy não disponível");
-            }
+            let decksToStudy = await ProgressRepository.GetDecksToStudy(idUser);
 
             return {
                 consecutiveDays: progress.consecutiveDays || 0,
                 studiedDecks: progress.studiedDecks || 0,
                 decksToStudy: decksToStudy,
                 lastStudyDate: progress.lastStudyDate,
-                message: this.getMotivationalMessage(
+                message: this.GetMotivationalMessage(
                     progress.consecutiveDays || 0
                 ),
             };
@@ -42,7 +33,7 @@ class ProgressService {
 
     async CheckAndResetForNewDay(idUser) {
         try {
-            const isNewDay = await this.isNewDay(idUser);
+            const isNewDay = await this.IsNewDay(idUser);
 
             if (isNewDay) {
                 const today = new Date().toISOString().split("T")[0];
@@ -60,7 +51,7 @@ class ProgressService {
         }
     }
 
-    async isNewDay(idUser) {
+    async IsNewDay(idUser) {
         try {
             const progress = await ProgressRepository.FindByUserId(idUser);
 
@@ -105,7 +96,7 @@ class ProgressService {
         }
     }
 
-    getMotivationalMessage(days) {
+    GetMotivationalMessage(days) {
         if (!days || days === 0) return "Vamos começar! Hoje é um novo dia!";
         if (days === 1) return "Bom começo! Continue assim!";
         if (days === 3) return "3 dias seguidos! Você está no caminho certo!";

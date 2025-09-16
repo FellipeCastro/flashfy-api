@@ -30,12 +30,12 @@ class ProgressRepository {
         }
     }
 
-    async getDecksToStudy(idUser) {
+    async GetDecksToStudy(idUser) {
         try {
             const sql = `
                 SELECT COUNT(*) as decksToStudy 
                 FROM decks 
-                WHERE nextReview <= CURDATE() 
+                WHERE (nextReview IS NULL OR nextReview <= CURDATE()) 
                 AND idUser = ?
             `;
             const result = await consult(sql, [idUser]);
