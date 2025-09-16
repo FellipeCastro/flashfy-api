@@ -1,19 +1,6 @@
 import ProgressRepository from "../repositories/ProgressRepository.js";
 
 class ProgressService {
-    constructor() {
-        this.setupDailyCheck();
-    }
-
-    setupDailyCheck() {
-        setInterval(() => {
-            console.log(
-                "⏰ Verificação diária ativa - " +
-                    new Date().toLocaleTimeString()
-            );
-        }, 1000 * 60 * 60);
-    }
-
     async List(idUser) {
         try {
             // Primeiro verificar e resetar se for novo dia
@@ -53,107 +40,7 @@ class ProgressService {
         }
     }
 
-    async UpdateConsecutiveDays(idUser) {
-        try {
-            let progress = await ProgressRepository.FindByUserId(idUser);
-
-            if (!progress) {
-                await ProgressRepository.Create(idUser);
-                progress = {
-                    consecutiveDays: 0,
-                    lastStudyDate: null,
-                    studiedDecks: 0,
-                };
-            }
-
-            const today = new Date().toISOString().split("T")[0];
-
-            // Se não tem data de último estudo, é o primeiro dia
-            if (!progress.lastStudyDate) {
-                await ProgressRepository.UpdateConsecutiveDays(
-                    1,
-                    today,
-                    idUser
-                );
-                return {
-                    consecutiveDays: 1,
-                    lastStudyDate: today,
-                };
-            }
-
-            const lastDate = new Date(progress.lastStudyDate);
-            const lastDateFormatted = lastDate.toISOString().split("T")[0];
-
-            // Calcular diferença em dias
-            const diffTime = new Date(today) - new Date(lastDateFormatted);
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-            let newConsecutiveDays;
-
-            if (diffDays === 1) {
-                // Estudou ontem → incrementa
-                newConsecutiveDays = (progress.consecutiveDays || 0) + 1;
-            } else if (diffDays === 0) {
-                // Mesmo dia → mantém
-                newConsecutiveDays = progress.consecutiveDays || 0;
-            } else {
-                // Mais de 1 dia de diferença → reset para 1
-                newConsecutiveDays = 1;
-            }
-
-            await ProgressRepository.UpdateConsecutiveDays(
-                newConsecutiveDays,
-                today,
-                idUser
-            );
-
-            return {
-                consecutiveDays: newConsecutiveDays,
-                lastStudyDate: today,
-            };
-        } catch (error) {
-            console.error(
-                "Erro ao atualizar dias consecutivos: ",
-                error.message
-            );
-            throw new Error("Erro ao atualizar dias consecutivos.");
-        }
-    }
-
-    async StudyDeck(idUser) {
-        try {
-            // 1. Primeiro verificar e resetar studiedDecks se for novo dia
-            const isNewDay = await this.checkAndResetForNewDay(idUser);
-
-            let studiedDecksValue;
-
-            if (isNewDay) {
-                // 2. Se for novo dia, começar com 1
-                studiedDecksValue = 1;
-            } else {
-                // 3. Se não for novo dia, incrementar
-                const progress = await ProgressRepository.FindByUserId(idUser);
-                studiedDecksValue = (progress.studiedDecks || 0) + 1;
-            }
-
-            // 4. Atualizar studiedDecks no banco
-            await ProgressRepository.SetStudiedDecks(studiedDecksValue, idUser);
-
-            // 5. Atualizar dias consecutivos (apenas se for novo dia)
-            if (isNewDay) {
-                await this.UpdateConsecutiveDays(idUser);
-            }
-
-            console.log(
-                `✅ Deck estudado - User: ${idUser}, Estudados: ${studiedDecksValue}, Novo dia: ${isNewDay}`
-            );
-        } catch (error) {
-            console.error("Erro ao atualizar decks estudados: ", error.message);
-            throw new Error("Erro ao atualizar decks estudados.");
-        }
-    }
-
-    async checkAndResetForNewDay(idUser) {
+    async CheckAndResetForNewDay(idUser) {
         try {
             const isNewDay = await this.isNewDay(idUser);
 
@@ -163,9 +50,6 @@ class ProgressService {
                 await ProgressRepository.ResetStudiedDecksForNewDay(
                     idUser,
                     today
-                );
-                console.log(
-                    `📅 Novo dia! Reset realizado para usuário ${idUser}`
                 );
             }
 
@@ -193,6 +77,31 @@ class ProgressService {
         } catch (error) {
             console.error("Erro ao verificar se é novo dia: ", error.message);
             return true;
+        }
+    }
+
+    async IncrementStudiedDecks(idUser) {
+        try {
+            await this.CheckAndResetForNewDay(idUser);
+            await ProgressRepository.IncrementStudiedDecks(idUser);
+
+            // Atualizar dias consecutivos se for um novo dia de estudo
+            const today = new Date().toISOString().split("T")[0];
+            const progress = await ProgressRepository.FindByUserId(idUser);
+
+            if (!progress.lastStudyDate || progress.lastStudyDate !== today) {
+                const newConsecutiveDays = (progress.consecutiveDays || 0) + 1;
+                await ProgressRepository.UpdateConsecutiveDays(
+                    idUser,
+                    newConsecutiveDays,
+                    today
+                );
+            }
+
+            return true;
+        } catch (error) {
+            console.error("Erro ao incrementar studiedDecks: ", error.message);
+            throw new Error("Erro ao incrementar studiedDecks.");
         }
     }
 

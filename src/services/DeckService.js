@@ -81,7 +81,7 @@ class DeckService {
             const formattedDate = newReviewDate.toISOString().split("T")[0];
 
             try {
-                const result = await DeckRepository.updateNextReview(
+                const result = await DeckRepository.UpdateNextReview(
                     formattedDate,
                     idDeck
                 );

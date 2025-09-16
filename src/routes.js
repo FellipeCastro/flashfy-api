@@ -40,10 +40,7 @@ router.put(
 
 // Progress
 router.get("/progress", token.Validate, ProgressController.List);
-router.put(
-    "/progress/study-deck",
-    token.Validate,
-    ProgressController.StudyDeck
-);
+router.post("/progress/increment", token.Validate, ProgressController.IncrementStudiedDecks);
+router.get("/progress/check-new-day", token.Validate, ProgressController.CheckNewDay);
 
 export default router;
