@@ -19,17 +19,29 @@ class UserService {
                 hashedPassword
             );
 
+            // Criar matérias padrão de forma não-bloqueante
             defaultSubjects.forEach(async (subject) => {
-                return await SubjectService.Create(
-                    result.idUser,
-                    subject.name,
-                    subject.color
-                );
+                try {
+                    await SubjectService.Create(
+                        result.idUser,
+                        subject.name,
+                        subject.color
+                    );
+                } catch (error) {
+                    console.error(
+                        `Erro ao criar matéria padrão ${subject.name}:`,
+                        error.message
+                    );
+                }
             });
 
-            delete result.password;
-            result.token = Token.Create(result.idUser);
-            return result;
+            // Gerar token
+            const token = Token.Create(result.idUser);
+
+            return {
+                ...result.toJSON(),
+                token,
+            };
         } catch (error) {
             console.error("Erro ao registrar usuário: ", error.message);
             throw new Error(error.message);
@@ -48,9 +60,17 @@ class UserService {
                 throw new Error("Senha incorreta.");
             }
 
-            delete user.password;
-            user.token = Token.Create(user.idUser);
-            return user;
+            // Gerar token
+            const token = Token.Create(user.idUser);
+
+            // Remover senha e retornar
+            const userWithoutPassword = { ...user.toJSON() };
+            delete userWithoutPassword.password;
+
+            return {
+                ...userWithoutPassword,
+                token,
+            };
         } catch (error) {
             console.error("Erro ao fazer login: ", error.message);
             throw new Error(error.message);
@@ -65,7 +85,13 @@ class UserService {
                 throw new Error("Usuário não encontrado.");
             }
 
-            return user;
+            // Garantir que a senha não seja retornada
+            const userWithoutPassword = { ...user.toJSON() };
+            if (userWithoutPassword.password) {
+                delete userWithoutPassword.password;
+            }
+
+            return userWithoutPassword;
         } catch (error) {
             console.error("Erro ao buscar perfil: ", error.message);
             throw new Error(error.message);

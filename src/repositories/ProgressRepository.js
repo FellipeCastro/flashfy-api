@@ -1,11 +1,12 @@
-import { consult } from "../database/connection.js";
+import { Progress, Deck } from "../models/associations.js";
+import { Op } from "sequelize";
 
 class ProgressRepository {
     async FindByUserId(idUser) {
         try {
-            const sql = "SELECT * FROM progress WHERE idUser = ?";
-            const result = await consult(sql, [idUser]);
-            return result[0];
+            return await Progress.findOne({
+                where: { idUser },
+            });
         } catch (error) {
             console.error(
                 "Erro ao buscar progresso do usuário: ",
@@ -17,10 +18,13 @@ class ProgressRepository {
 
     async Create(idUser) {
         try {
-            const sql =
-                "INSERT INTO progress (idUser, consecutiveDays, lastStudyDate) VALUES (?, 0, NULL)";
-            const result = await consult(sql, [idUser]);
-            return result;
+            return await Progress.create({
+                idUser,
+                consecutiveDays: 0,
+                studiedDecks: 0,
+                decksToStudy: 0,
+                lastStudyDate: null,
+            });
         } catch (error) {
             console.error(
                 "Erro ao criar registro de progresso: ",
@@ -32,14 +36,16 @@ class ProgressRepository {
 
     async GetDecksToStudy(idUser) {
         try {
-            const sql = `
-                SELECT COUNT(*) as decksToStudy 
-                FROM decks 
-                WHERE (nextReview IS NULL OR nextReview <= CURDATE()) 
-                AND idUser = ?
-            `;
-            const result = await consult(sql, [idUser]);
-            return result[0].decksToStudy;
+            const count = await Deck.count({
+                where: {
+                    idUser,
+                    [Op.or]: [
+                        { nextReview: { [Op.lte]: new Date() } },
+                        { nextReview: null },
+                    ],
+                },
+            });
+            return count;
         } catch (error) {
             console.error("Erro ao contar decks para estudar: ", error.message);
             throw new Error("Erro ao contar decks para estudar.");
@@ -48,10 +54,17 @@ class ProgressRepository {
 
     async ResetStudiedDecksForNewDay(idUser, today) {
         try {
-            const sql =
-                "UPDATE progress SET studiedDecks = 0, lastStudyDate = ? WHERE idUser = ?";
-            const result = await consult(sql, [today, idUser]);
-            return result;
+            const [affectedRows] = await Progress.update(
+                {
+                    studiedDecks: 0,
+                    lastStudyDate: today,
+                },
+                {
+                    where: { idUser },
+                }
+            );
+
+            return { affectedRows };
         } catch (error) {
             console.error(
                 "Erro ao resetar studiedDecks para novo dia: ",
@@ -63,10 +76,12 @@ class ProgressRepository {
 
     async IncrementStudiedDecks(idUser) {
         try {
-            const sql =
-                "UPDATE progress SET studiedDecks = studiedDecks + 1 WHERE idUser = ?";
-            const result = await consult(sql, [idUser]);
-            return result;
+            const [affectedRows] = await Progress.increment("studiedDecks", {
+                by: 1,
+                where: { idUser },
+            });
+
+            return { affectedRows };
         } catch (error) {
             console.error("Erro ao incrementar studiedDecks: ", error.message);
             throw new Error("Erro ao incrementar studiedDecks.");
@@ -75,14 +90,17 @@ class ProgressRepository {
 
     async UpdateConsecutiveDays(idUser, consecutiveDays, lastStudyDate) {
         try {
-            const sql =
-                "UPDATE progress SET consecutiveDays = ?, lastStudyDate = ? WHERE idUser = ?";
-            const result = await consult(sql, [
-                consecutiveDays,
-                lastStudyDate,
-                idUser,
-            ]);
-            return result;
+            const [affectedRows] = await Progress.update(
+                {
+                    consecutiveDays,
+                    lastStudyDate,
+                },
+                {
+                    where: { idUser },
+                }
+            );
+
+            return { affectedRows };
         } catch (error) {
             console.error(
                 "Erro ao atualizar dias consecutivos: ",

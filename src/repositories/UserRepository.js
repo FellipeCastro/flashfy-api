@@ -1,12 +1,17 @@
-import { consult } from "../database/connection.js";
+import { User, Progress, Deck, Subject } from "../models/associations.js";
 
 class UserRepository {
     async ListByEmail(email) {
         try {
-            const sql = "SELECT * FROM users WHERE email = ?";
-            const result = await consult(sql, [email]);
-
-            return result.length > 0 ? result[0] : null;
+            return await User.findOne({
+                where: { email },
+                include: [
+                    {
+                        model: Progress,
+                        as: "progress",
+                    },
+                ],
+            });
         } catch (error) {
             console.error("Erro ao buscar usuário por e-mail: ", error.message);
             throw new Error("Erro ao buscar usuário por email.");
@@ -15,14 +20,31 @@ class UserRepository {
 
     async Register(name, email, password) {
         try {
-            const sql =
-                "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
-            const result = await consult(sql, [name, email, password]);
-            const [user] = await consult(
-                "SELECT * FROM users WHERE idUser = ?",
-                [result.insertId]
-            );
-            return user;
+            const user = await User.create({
+                name,
+                email,
+                password,
+            });
+
+            // Cria progresso automaticamente para o novo usuário
+            await Progress.create({
+                idUser: user.idUser,
+                consecutiveDays: 0,
+                studiedDecks: 0,
+                decksToStudy: 0,
+                lastStudyDate: null,
+            });
+
+            // Retorna usuário sem a senha
+            return await User.findByPk(user.idUser, {
+                attributes: { exclude: ["password"] },
+                include: [
+                    {
+                        model: Progress,
+                        as: "progress",
+                    },
+                ],
+            });
         } catch (error) {
             console.error("Erro ao registrar usuário: ", error.message);
             throw new Error("Erro ao registrar usuário.");
@@ -31,14 +53,43 @@ class UserRepository {
 
     async Profile(idUser) {
         try {
-            const sql =
-                "SELECT idUser, name, email FROM users WHERE idUser = ?";
-            const result = await consult(sql, [idUser]);
-
-            return result.length > 0 ? result[0] : null;
+            return await User.findByPk(idUser, {
+                attributes: { exclude: ["password"] },
+                include: [
+                    {
+                        model: Progress,
+                        as: "progress",
+                    },
+                    {
+                        model: Deck,
+                        as: "decks",
+                        include: [
+                            {
+                                model: Subject,
+                                as: "subject",
+                            },
+                        ],
+                    },
+                    {
+                        model: Subject,
+                        as: "subjects",
+                    },
+                ],
+            });
         } catch (error) {
             console.error("Erro ao buscar perfil: ", error.message);
             throw new Error("Erro ao buscar perfil.");
+        }
+    }
+
+    async FindById(idUser) {
+        try {
+            return await User.findByPk(idUser, {
+                attributes: { exclude: ["password"] },
+            });
+        } catch (error) {
+            console.error("Erro ao buscar usuário: ", error.message);
+            throw new Error("Erro ao buscar usuário.");
         }
     }
 }

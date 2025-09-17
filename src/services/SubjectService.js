@@ -14,10 +14,19 @@ class SubjectService {
     async List(idUser) {
         try {
             const result = await SubjectRepository.List(idUser);
-            return result;
+
+            // Formata a resposta para incluir contagem de decks
+            const formattedResult = result.map((subject) => {
+                return {
+                    ...subject.toJSON(),
+                    decksCount: subject.decks ? subject.decks.length : 0,
+                };
+            });
+
+            return formattedResult;
         } catch (error) {
-            console.error("Erro ao listas matérias: ", error.message);
-            throw new Error("Erro ao listas matérias.");
+            console.error("Erro ao listar matérias: ", error.message);
+            throw new Error("Erro ao listar matérias.");
         }
     }
 
@@ -27,6 +36,16 @@ class SubjectService {
         } catch (error) {
             console.error("Erro ao deletar matéria: ", error.message);
             throw new Error("Erro ao deletar matéria.");
+        }
+    }
+
+    async GetById(idSubject) {
+        try {
+            const subject = await SubjectRepository.FindById(idSubject);
+            return subject;
+        } catch (error) {
+            console.error("Erro ao buscar matéria: ", error.message);
+            throw new Error("Erro ao buscar matéria.");
         }
     }
 }

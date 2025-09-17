@@ -38,7 +38,10 @@ class CardService {
         try {
             return await CardRepository.UpdateDifficulty(difficulty, idCard);
         } catch (error) {
-            console.error("Erro ao atualizar dificuldade do card: ", error.message);
+            console.error(
+                "Erro ao atualizar dificuldade do card: ",
+                error.message
+            );
             throw new Error("Erro ao atualizar dificuldade do card.");
         }
     }

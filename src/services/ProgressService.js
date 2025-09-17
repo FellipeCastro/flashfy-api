@@ -6,15 +6,19 @@ class ProgressService {
             // Primeiro verificar e resetar se for novo dia
             await this.CheckAndResetForNewDay(idUser);
 
-            // Depois buscar os dados atualizados
+            // Buscar os dados atualizados
             let progress = await ProgressRepository.FindByUserId(idUser);
 
+            // Se não existir, criar um novo registro
             if (!progress) {
                 await ProgressRepository.Create(idUser);
                 progress = await ProgressRepository.FindByUserId(idUser);
             }
 
-            let decksToStudy = await ProgressRepository.GetDecksToStudy(idUser);
+            // Buscar decks para estudar
+            const decksToStudy = await ProgressRepository.GetDecksToStudy(
+                idUser
+            );
 
             return {
                 consecutiveDays: progress.consecutiveDays || 0,
@@ -37,7 +41,6 @@ class ProgressService {
 
             if (isNewDay) {
                 const today = new Date().toISOString().split("T")[0];
-                // Resetar studiedDecks para 0 (o StudyDeck vai setar para 1 depois)
                 await ProgressRepository.ResetStudiedDecksForNewDay(
                     idUser,
                     today

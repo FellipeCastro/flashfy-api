@@ -1,4 +1,3 @@
-import CardRepository from "../repositories/CardRepository.js";
 import DeckRepository from "../repositories/DeckRepository.js";
 
 class DeckService {
@@ -18,29 +17,16 @@ class DeckService {
 
     async List(idUser) {
         try {
+            // Agora o DeckRepository.List já retorna os cards incluídos
             const decks = await DeckRepository.List(idUser);
-            const result = await Promise.all(
-                decks.map(async (deck) => {
-                    try {
-                        const cardsResult = await CardRepository.List(
-                            deck.idDeck
-                        );
-                        return {
-                            ...deck,
-                            cards: cardsResult,
-                        };
-                    } catch (error) {
-                        console.error(
-                            `Erro ao contar cards do deck ${deck.idDeck}:`,
-                            error
-                        );
-                        return {
-                            ...deck,
-                            cards: 0,
-                        };
-                    }
-                })
-            );
+
+            // Formata a resposta para manter compatibilidade
+            const result = decks.map((deck) => {
+                return {
+                    ...deck.toJSON(),
+                    cards: deck.cards || [], // Já vem do include
+                };
+            });
 
             return result;
         } catch (error) {
@@ -60,45 +46,55 @@ class DeckService {
 
     async UpdateNextReview(idDeck) {
         try {
-            const cards = await CardRepository.List(idDeck);
-            const difficulties = await Promise.all(
-                cards.map(async (card) => card.difficulty || 4)
-            );
+            // Busca o deck com os cards para calcular a dificuldade
+            const deck = await DeckRepository.FindById(idDeck);
+
+            if (!deck || !deck.cards) {
+                throw new Error("Deck não encontrado ou sem cards.");
+            }
+
+            const difficulties = deck.cards.map((card) => card.difficulty || 4);
             const average = Math.round(
                 difficulties.reduce((sum, value) => sum + value, 0) /
                     difficulties.length
             );
+
             const daysToAdd =
                 {
-                    1: 7,
-                    2: 5,
-                    3: 3,
-                    4: 1,
+                    1: 7, // Muito fácil
+                    2: 5, // Fácil
+                    3: 3, // Difícil
+                    4: 1, // Muito difícil
                 }[average] || 0;
+
             const currentDate = new Date();
             const newReviewDate = new Date(currentDate);
             newReviewDate.setDate(currentDate.getDate() + daysToAdd);
+
+            // Formata para YYYY-MM-DD
             const formattedDate = newReviewDate.toISOString().split("T")[0];
 
-            try {
-                const result = await DeckRepository.UpdateNextReview(
-                    formattedDate,
-                    idDeck
-                );
-                return result;
-            } catch (error) {
-                console.error(
-                    "Erro ao atualizar data da próxima revisão: ",
-                    error.message
-                );
-                throw new Error("Erro ao atualizar data da próxima revisão.");
-            }
+            const result = await DeckRepository.UpdateNextReview(
+                formattedDate,
+                idDeck
+            );
+            return result;
         } catch (error) {
             console.error(
-                "Erro ao calcular data da próxima revisão: ",
+                "Erro ao calcular/atualizar data da próxima revisão: ",
                 error.message
             );
             throw new Error("Erro ao calcular data da próxima revisão.");
+        }
+    }
+
+    async GetById(idDeck) {
+        try {
+            const deck = await DeckRepository.FindById(idDeck);
+            return deck;
+        } catch (error) {
+            console.error("Erro ao buscar deck: ", error.message);
+            throw new Error("Erro ao buscar deck.");
         }
     }
 }

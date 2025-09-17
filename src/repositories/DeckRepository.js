@@ -1,16 +1,23 @@
-import { consult } from "../database/connection.js";
+import { Deck, Subject, Card } from "../models/associations.js";
+import { Op } from "sequelize";
 
 class DeckRepository {
     async Create(idUser, idSubject, title) {
         try {
-            const sql =
-                "INSERT INTO decks (idUser, idSubject, title) VALUES (?, ?, ?)";
-            const result = await consult(sql, [idUser, idSubject, title]);
-            const [insertSubject] = await consult(
-                "SELECT * FROM decks WHERE idDeck = ?",
-                [result.insertId]
-            );
-            return insertSubject;
+            const deck = await Deck.create({
+                idUser,
+                idSubject,
+                title,
+                nextReview: null,
+            });
+
+            // Retorna o deck criado com dados completos
+            return await Deck.findByPk(deck.idDeck, {
+                include: [
+                    { model: Subject, as: "subject" },
+                    { model: Card, as: "cards" },
+                ],
+            });
         } catch (error) {
             console.error("Erro ao criar deck: ", error.message);
             throw new Error("Erro ao criar deck.");
@@ -19,16 +26,27 @@ class DeckRepository {
 
     async List(idUser) {
         try {
-            const sql = `SELECT 
-                            d.idDeck,
-                            d.title,
-                            s.name as subject,
-                            d.nextReview
-                        FROM decks d
-                        INNER JOIN subjects s ON d.idSubject = s.idSubject
-                        WHERE d.idUser = ?`;
-            const result = consult(sql, [idUser]);
-            return result;
+            return await Deck.findAll({
+                where: { idUser },
+                include: [
+                    {
+                        model: Subject,
+                        as: "subject",
+                        attributes: ["idSubject", "name", "color"],
+                    },
+                    {
+                        model: Card,
+                        as: "cards",
+                        attributes: [
+                            "idCard",
+                            "question",
+                            "answer",
+                            "difficulty",
+                        ],
+                    },
+                ],
+                order: [["title", "ASC"]],
+            });
         } catch (error) {
             console.error("Erro ao listar decks: ", error.message);
             throw new Error("Erro ao listar decks.");
@@ -37,15 +55,13 @@ class DeckRepository {
 
     async Delete(idDeck) {
         try {
-            const checkSql = "SELECT idDeck FROM decks WHERE idDeck = ?";
-            const deck = await consult(checkSql, [idDeck]);
-
-            if (deck.length === 0) {
+            const deck = await Deck.findByPk(idDeck);
+            if (!deck) {
                 throw new Error("Deck não encontrado.");
             }
 
-            const sql = "DELETE FROM decks WHERE idDeck = ?";
-            await consult(sql, [idDeck]);
+            await deck.destroy();
+            return { message: "Deck deletado com sucesso." };
         } catch (error) {
             console.error("Erro ao deletar deck: ", error.message);
             throw new Error("Erro ao deletar deck.");
@@ -54,35 +70,66 @@ class DeckRepository {
 
     async CountCards(idDeck, idUser) {
         try {
-            const sql = `
-            SELECT COUNT(c.idCard) as cards
-            FROM cards c
-            INNER JOIN decks d ON c.idDeck = d.idDeck
-            WHERE d.idDeck = ?
-            AND d.idUser = ?
-            `;
-            const result = await consult(sql, [idDeck, idUser]);
-            return result;
+            const deck = await Deck.findOne({
+                where: {
+                    idDeck,
+                    idUser,
+                },
+                include: [
+                    {
+                        model: Card,
+                        as: "cards",
+                        attributes: [],
+                    },
+                ],
+            });
+
+            if (!deck) {
+                throw new Error("Deck não encontrado.");
+            }
+
+            const count = await Card.count({
+                where: { idDeck },
+            });
+
+            return [{ cards: count }];
         } catch (error) {
             console.error("Erro ao contar cards: ", error.message);
             throw new Error("Erro ao contar cards.");
         }
     }
 
-    async updateNextReview(nextReview, idDeck) {
+    async UpdateNextReview(nextReview, idDeck) {
         try {
-            const checkSql = "SELECT idDeck FROM decks WHERE idDeck = ?";
-            const deck = await consult(checkSql, [idDeck]);
-
-            if (deck.length === 0) {
+            const deck = await Deck.findByPk(idDeck);
+            if (!deck) {
                 throw new Error("Deck não encontrado.");
             }
-            
-            const sql = "UPDATE decks SET nextReview = ? WHERE idDeck = ?";
-            await consult(sql, [nextReview, idDeck]);
+
+            await deck.update({ nextReview });
+            return deck;
         } catch (error) {
-            console.error("Erro ao atualizar data da próxima revisão do deck: ", error.message);
-            throw new Error("Erro ao atualizar data da próxima revisão do deck.");
+            console.error(
+                "Erro ao atualizar data da próxima revisão do deck: ",
+                error.message
+            );
+            throw new Error(
+                "Erro ao atualizar data da próxima revisão do deck."
+            );
+        }
+    }
+
+    async FindById(idDeck) {
+        try {
+            return await Deck.findByPk(idDeck, {
+                include: [
+                    { model: Subject, as: "subject" },
+                    { model: Card, as: "cards" },
+                ],
+            });
+        } catch (error) {
+            console.error("Erro ao buscar deck: ", error.message);
+            throw new Error("Erro ao buscar deck.");
         }
     }
 }
