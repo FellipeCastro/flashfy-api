@@ -1,5 +1,5 @@
 import { Router } from "express";
-import token from "./token.js";
+import token from "./middleware/token.js";
 import UserController from "./controllers/UserController.js";
 import SubjectController from "./controllers/SubjectController.js";
 import DeckController from "./controllers/DeckController.js";
@@ -40,7 +40,15 @@ router.put(
 
 // Progress
 router.get("/progress", token.Validate, ProgressController.List);
-router.post("/progress/increment", token.Validate, ProgressController.IncrementStudiedDecks);
-router.get("/progress/check-new-day", token.Validate, ProgressController.CheckNewDay);
+router.post(
+    "/progress/increment",
+    token.Validate,
+    ProgressController.IncrementStudiedDecks
+);
+router.get(
+    "/progress/check-new-day",
+    token.Validate,
+    ProgressController.CheckNewDay
+);
 
 export default router;

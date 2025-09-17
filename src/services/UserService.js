@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import Token from "../token.js";
+import Token from "../middleware/token.js";
 import { defaultSubjects } from "../database/defaultSubjects.js";
 import SubjectService from "./SubjectService.js";
 import UserRepository from "../repositories/UserRepository.js";

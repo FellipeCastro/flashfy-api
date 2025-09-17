@@ -4,7 +4,6 @@ import Subject from "./Subject.js";
 import Deck from "./Deck.js";
 import Card from "./Card.js";
 
-// Definir associações
 User.hasOne(Progress, {
     foreignKey: "idUser",
     as: "progress",
