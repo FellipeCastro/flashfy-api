@@ -41,11 +41,12 @@ class DeckController {
         }
     }
 
-    async UpdateNextReview(req, res) {
+    async Study(req, res) {
         try {
-            const { idDeck } = req.params;
+            const idUser = req.idUser;
+            const { idDeck, difficulties } = req.body;
 
-            const result = await DeckService.UpdateNextReview(idDeck);
+            const result = await DeckService.Study(idUser, idDeck, difficulties);
             return res.status(200).json(result);
         } catch (error) {
             return res.status(400).json({ error: error.message });

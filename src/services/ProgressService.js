@@ -79,12 +79,14 @@ class ProgressService {
             await this.CheckAndResetForNewDay(idUser);
             await ProgressRepository.IncrementStudiedDecks(idUser);
 
-            // Atualizar dias consecutivos se for um novo dia de estudo
-            const today = new Date().toISOString().split("T")[0];
-            const progress = await ProgressRepository.FindByUserId(idUser);
+            // Verifica se é um novo dia de estudo
+            const isNewDay = await this.IsNewDay(idUser);
 
-            if (!progress.lastStudyDate || progress.lastStudyDate !== today) {
+            if (isNewDay) {
+                const today = new Date();
+                const progress = await ProgressRepository.FindByUserId(idUser);
                 const newConsecutiveDays = (progress.consecutiveDays || 0) + 1;
+
                 await ProgressRepository.UpdateConsecutiveDays(
                     idUser,
                     newConsecutiveDays,

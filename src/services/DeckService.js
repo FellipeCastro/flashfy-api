@@ -1,4 +1,6 @@
 import DeckRepository from "../repositories/DeckRepository.js";
+import CardService from "./CardService.js";
+import ProgressService from "./ProgressService.js";
 
 class DeckService {
     async Create(idUser, idSubject, title) {
@@ -12,26 +14,6 @@ class DeckService {
         } catch (error) {
             console.error("Erro ao criar deck: ", error.message);
             throw new Error("Erro ao criar deck.");
-        }
-    }
-
-    async List(idUser) {
-        try {
-            // Agora o DeckRepository.List já retorna os cards incluídos
-            const decks = await DeckRepository.List(idUser);
-
-            // Formata a resposta para manter compatibilidade
-            const result = decks.map((deck) => {
-                return {
-                    ...deck.toJSON(),
-                    cards: deck.cards || [], // Já vem do include
-                };
-            });
-
-            return result;
-        } catch (error) {
-            console.error("Erro ao listar decks: ", error.message);
-            throw new Error("Erro ao listar decks.");
         }
     }
 
@@ -88,13 +70,55 @@ class DeckService {
         }
     }
 
-    async GetById(idDeck) {
+    // async GetById(idDeck) {
+    //     try {
+    //         const deck = await DeckRepository.FindById(idDeck);
+    //         return deck;
+    //     } catch (error) {
+    //         console.error("Erro ao buscar deck: ", error.message);
+    //         throw new Error("Erro ao buscar deck.");
+    //     }
+    // }
+
+    async Study(idUser, idDeck, difficulties) {
         try {
+            // primeiro acha o deck pelo id
             const deck = await DeckRepository.FindById(idDeck);
-            return deck;
+
+            // validação do deck
+            if (!deck || !deck.cards) {
+                throw new Error("Deck não encontrado ou sem cards.");
+            }
+
+            if (difficulties.length !== deck.cards.length) {
+                throw new Error(
+                    "Quantidade de dificuldades diferente da quantidade de cards."
+                );
+            }
+
+            // pega os cards do deck, e para cada card altera sua dificuldade com base nas dificuldades passadas
+            await Promise.all(
+                deck.cards.map(async (card, index) => {
+                    await CardService.UpdateDifficulty(
+                        difficulties[index],
+                        card.idCard
+                    );
+                })
+            );
+
+            // atualiza a data da proxima revisão do deck
+            await this.UpdateNextReview(idDeck);
+
+            // atualiza os dados de progresso
+            await ProgressService.IncrementStudiedDecks(idUser);
+
+            // Retorna mensagem de sucesso
+            return {
+                message: "Deck estudado com sucesso!",
+            };
         } catch (error) {
-            console.error("Erro ao buscar deck: ", error.message);
-            throw new Error("Erro ao buscar deck.");
+            console.error("Erro ao estudar deck: ", error.message);
+            throw new Error("Erro ao estudar deck.");
         }
     }
 }

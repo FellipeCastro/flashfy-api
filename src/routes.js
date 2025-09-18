@@ -22,33 +22,13 @@ router.delete("/subjects/:idSubject", token.Validate, SubjectController.Delete);
 router.post("/decks", token.Validate, DeckController.Create);
 router.get("/decks", token.Validate, DeckController.List);
 router.delete("/decks/:idDeck", token.Validate, DeckController.Delete);
-router.put(
-    "/decks/next-review/:idDeck",
-    token.Validate,
-    DeckController.UpdateNextReview
-);
+router.put("/decks/study", token.Validate, DeckController.Study)
 
 // Cards
 router.post("/cards", token.Validate, CardController.Create);
-router.get("/cards/:idDeck", token.Validate, CardController.List);
 router.delete("/cards/:idCard", token.Validate, CardController.Delete);
-router.put(
-    "/cards/difficulty/:idCard",
-    token.Validate,
-    CardController.UpdateDifficulty
-);
 
 // Progress
 router.get("/progress", token.Validate, ProgressController.List);
-router.post(
-    "/progress/increment",
-    token.Validate,
-    ProgressController.IncrementStudiedDecks
-);
-router.get(
-    "/progress/check-new-day",
-    token.Validate,
-    ProgressController.CheckNewDay
-);
 
 export default router;

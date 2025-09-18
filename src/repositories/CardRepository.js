@@ -20,19 +20,6 @@ class CardRepository {
         }
     }
 
-    async List(idDeck) {
-        try {
-            return await Card.findAll({
-                where: { idDeck },
-                include: [{ model: Deck, as: "deck" }],
-                order: [["idCard", "ASC"]],
-            });
-        } catch (error) {
-            console.error("Erro ao listar cards: ", error.message);
-            throw new Error("Erro ao listar cards.");
-        }
-    }
-
     async Delete(idCard) {
         try {
             const card = await Card.findByPk(idCard);
