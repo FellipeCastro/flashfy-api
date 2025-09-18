@@ -17,6 +17,16 @@ class DeckService {
         }
     }
 
+    async List(idUser) {
+        try {
+            const result = await DeckRepository.List(idUser);
+            return result;
+        } catch (error) {
+            console.error("Erro ao listar decks: ", error.message);
+            throw new Error("Erro ao listar decks.");
+        }
+    }
+
     async Delete(idDeck) {
         try {
             return await DeckRepository.Delete(idDeck);

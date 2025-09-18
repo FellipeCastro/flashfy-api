@@ -1,6 +1,5 @@
 import { Sequelize } from "sequelize";
 
-// Configuração para Supabase (PostgreSQL)
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: "postgres",
     protocol: "postgres",
