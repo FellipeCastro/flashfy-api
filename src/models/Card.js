@@ -18,11 +18,11 @@ const Card = sequelize.define(
             },
         },
         question: {
-            type: DataTypes.STRING(100),
+            type: DataTypes.STRING(2000),
             allowNull: false,
         },
         answer: {
-            type: DataTypes.STRING(100),
+            type: DataTypes.STRING(2000),
             allowNull: false,
         },
         difficulty: {

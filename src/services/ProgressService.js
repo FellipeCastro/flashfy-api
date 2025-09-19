@@ -1,4 +1,5 @@
 import ProgressRepository from "../repositories/ProgressRepository.js";
+import DeckService from "./DeckService.js";
 
 class ProgressService {
     async List(idUser) {
@@ -15,9 +16,11 @@ class ProgressService {
                 progress = await ProgressRepository.FindByUserId(idUser);
             }
 
+            const decks = await DeckService.List(idUser)
+
             // Buscar decks para estudar
-            const decksToStudy = await ProgressRepository.GetDecksToStudy(
-                idUser
+            const decksToStudy = await this.GetDecksToStudy(
+                decks
             );
 
             return {
@@ -32,6 +35,32 @@ class ProgressService {
         } catch (error) {
             console.error("Erro ao listar progresso: ", error.message);
             throw new Error("Erro ao listar progresso.");
+        }
+    }
+
+    async GetDecksToStudy(decks) {
+        try {
+            // Filtra os decks que precisam ser estudados
+            const decksToStudy = decks.filter((deck) => {
+                if (!deck.nextReview) {
+                    return false; // Deck sem data de revisão não precisa ser estudado
+                }
+
+                const reviewDate = new Date(deck.nextReview);
+                const today = new Date();
+
+                // Remove as horas para comparar apenas a data
+                reviewDate.setHours(0, 0, 0, 0);
+                today.setHours(0, 0, 0, 0);
+
+                // Deck precisa ser estudado se a data de revisão for hoje ou já passou
+                return reviewDate <= today;
+            });
+
+            return decksToStudy.length; // Retorna a quantidade de decks para estudar
+        } catch (error) {
+            console.error("Erro ao contar decks para estudar: ", error.message);
+            throw new Error("Erro ao contar decks para estudar.");
         }
     }
 

@@ -34,24 +34,6 @@ class ProgressRepository {
         }
     }
 
-    async GetDecksToStudy(idUser) {
-        try {
-            const count = await Deck.count({
-                where: {
-                    idUser,
-                    [Op.or]: [
-                        { nextReview: { [Op.lte]: new Date() } },
-                        { nextReview: null },
-                    ],
-                },
-            });
-            return count;
-        } catch (error) {
-            console.error("Erro ao contar decks para estudar: ", error.message);
-            throw new Error("Erro ao contar decks para estudar.");
-        }
-    }
-
     async ResetStudiedDecksForNewDay(idUser, today) {
         try {
             const [affectedRows] = await Progress.update(
