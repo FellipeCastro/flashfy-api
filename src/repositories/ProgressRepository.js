@@ -72,13 +72,19 @@ class ProgressRepository {
 
     async UpdateConsecutiveDays(idUser, consecutiveDays, lastStudyDate) {
         try {
+            // Se lastStudyDate for uma string, converte para Date
+            const studyDate =
+                typeof lastStudyDate === "string"
+                    ? new Date(lastStudyDate)
+                    : lastStudyDate;
+
             const [affectedRows] = await Progress.update(
                 {
-                    consecutiveDays,
-                    lastStudyDate,
+                    consecutiveDays: consecutiveDays,
+                    lastStudyDate: studyDate,
                 },
                 {
-                    where: { idUser },
+                    where: { idUser: idUser },
                 }
             );
 

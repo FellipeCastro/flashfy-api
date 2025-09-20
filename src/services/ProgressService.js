@@ -16,12 +16,8 @@ class ProgressService {
                 progress = await ProgressRepository.FindByUserId(idUser);
             }
 
-            const decks = await DeckService.List(idUser)
-
-            // Buscar decks para estudar
-            const decksToStudy = await this.GetDecksToStudy(
-                decks
-            );
+            const decks = await DeckService.List(idUser);
+            const decksToStudy = await this.GetDecksToStudy(decks);
 
             return {
                 consecutiveDays: progress.consecutiveDays || 0,
@@ -40,24 +36,19 @@ class ProgressService {
 
     async GetDecksToStudy(decks) {
         try {
-            // Filtra os decks que precisam ser estudados
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
             const decksToStudy = decks.filter((deck) => {
-                if (!deck.nextReview) {
-                    return false; // Deck sem data de revisão não precisa ser estudado
-                }
+                if (!deck.nextReview) return false; // Deck sem data não precisa ser estudado
 
                 const reviewDate = new Date(deck.nextReview);
-                const today = new Date();
-
-                // Remove as horas para comparar apenas a data
                 reviewDate.setHours(0, 0, 0, 0);
-                today.setHours(0, 0, 0, 0);
 
-                // Deck precisa ser estudado se a data de revisão for hoje ou já passou
                 return reviewDate <= today;
             });
 
-            return decksToStudy.length; // Retorna a quantidade de decks para estudar
+            return decksToStudy.length;
         } catch (error) {
             console.error("Erro ao contar decks para estudar: ", error.message);
             throw new Error("Erro ao contar decks para estudar.");
@@ -91,35 +82,54 @@ class ProgressService {
                 return true;
             }
 
-            const today = new Date().toISOString().split("T")[0];
-            const lastStudyDate = new Date(progress.lastStudyDate)
-                .toISOString()
-                .split("T")[0];
+            const today = new Date();
+            const lastStudyDate = new Date(progress.lastStudyDate);
 
-            return lastStudyDate !== today;
+            // Compara apenas dia, mês e ano
+            return !this.IsSameDay(today, lastStudyDate);
         } catch (error) {
             console.error("Erro ao verificar se é novo dia: ", error.message);
             return true;
         }
     }
 
+    IsSameDay(date1, date2) {
+        return (
+            date1.getFullYear() === date2.getFullYear() &&
+            date1.getMonth() === date2.getMonth() &&
+            date1.getDate() === date2.getDate()
+        );
+    }
+
     async IncrementStudiedDecks(idUser) {
         try {
-            await this.CheckAndResetForNewDay(idUser);
+            // Primeiro verifica se é novo dia e reseta se necessário
+            const isNewDay = await this.CheckAndResetForNewDay(idUser);
+
+            // Incrementa os decks estudados
             await ProgressRepository.IncrementStudiedDecks(idUser);
 
-            // Verifica se é um novo dia de estudo
-            const isNewDay = await this.IsNewDay(idUser);
-
             if (isNewDay) {
-                const today = new Date();
+                // Se é um novo dia, incrementa os dias consecutivos
                 const progress = await ProgressRepository.FindByUserId(idUser);
                 const newConsecutiveDays = (progress.consecutiveDays || 0) + 1;
+                const today = new Date();
 
                 await ProgressRepository.UpdateConsecutiveDays(
                     idUser,
                     newConsecutiveDays,
                     today
+                );
+            } else {
+                // Se não é novo dia, apenas atualiza a data do último estudo
+                // mas mantém os dias consecutivos
+                const progress = await ProgressRepository.FindByUserId(idUser);
+                const today = new Date();
+
+                await ProgressRepository.UpdateConsecutiveDays(
+                    idUser,
+                    progress.consecutiveDays, // Mantém os dias consecutivos
+                    today // Atualiza apenas a data
                 );
             }
 
@@ -131,8 +141,9 @@ class ProgressService {
     }
 
     GetMotivationalMessage(days) {
-        if (!days || days === 0) return "Vamos começar! Hoje é um novo dia!";
-        if (days === 1) return "Bom começo! Continue assim!";
+        if (!days || days === 0)
+            return "Estude seus decks para começar uma nova sequência!";
+        if (days === 1) return "Bom começo! Primeiro dia de estudo!";
         if (days === 3) return "3 dias seguidos! Você está no caminho certo!";
         if (days === 7) return "Uma semana completa! Incrível!";
         if (days === 14) return "Duas semanas! Você é dedicado!";
