@@ -8,6 +8,10 @@ import ProgressController from "./controllers/ProgressController.js";
 
 const router = Router();
 
+router.get("/", (req, res) => {
+    res.send("Servidor funcionando!");
+});
+
 // Users
 router.post("/users/register", UserController.Register);
 router.post("/users/login", UserController.Login);
@@ -22,7 +26,7 @@ router.delete("/subjects/:idSubject", token.Validate, SubjectController.Delete);
 router.post("/decks", token.Validate, DeckController.Create);
 router.get("/decks", token.Validate, DeckController.List);
 router.delete("/decks/:idDeck", token.Validate, DeckController.Delete);
-router.put("/decks/study", token.Validate, DeckController.Study)
+router.put("/decks/study", token.Validate, DeckController.Study);
 
 // Cards
 router.post("/cards", token.Validate, CardController.Create);
