@@ -93,6 +93,29 @@ class ProgressService {
         }
     }
 
+    async ShouldResetConsecutiveDays(idUser) {
+        try {
+            const progress = await ProgressRepository.FindByUserId(idUser);
+
+            if (!progress || !progress.lastStudyDate) {
+                return false; // Não resetar se nunca estudou
+            }
+
+            const today = new Date();
+            const lastStudyDate = new Date(progress.lastStudyDate);
+
+            // Calcula a diferença em dias
+            const diffTime = Math.abs(today - lastStudyDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            // Se passou mais de 1 dia desde o último estudo, reseta
+            return diffDays > 1;
+        } catch (error) {
+            console.error("Erro ao verificar reset de dias: ", error.message);
+            return false;
+        }
+    }
+
     IsSameDay(date1, date2) {
         return (
             date1.getFullYear() === date2.getFullYear() &&
@@ -103,7 +126,21 @@ class ProgressService {
 
     async IncrementStudiedDecks(idUser) {
         try {
-            // Primeiro verifica se é novo dia e reseta se necessário
+            // Verifica se precisa resetar dias consecutivos (mais de 1 dia sem estudar)
+            const shouldReset = await this.ShouldResetConsecutiveDays(idUser);
+
+            if (shouldReset) {
+                console.log(
+                    "🔄 Resetando dias consecutivos (mais de 1 dia sem estudar)"
+                );
+                await ProgressRepository.UpdateConsecutiveDays(
+                    idUser,
+                    0,
+                    new Date()
+                );
+            }
+
+            // Verifica se é novo dia e reseta studiedDecks se necessário
             const isNewDay = await this.CheckAndResetForNewDay(idUser);
 
             // Incrementa os decks estudados
@@ -112,7 +149,11 @@ class ProgressService {
             if (isNewDay) {
                 // Se é um novo dia, incrementa os dias consecutivos
                 const progress = await ProgressRepository.FindByUserId(idUser);
-                const newConsecutiveDays = (progress.consecutiveDays || 0) + 1;
+
+                // Se resetou acima, começa do 1, senão incrementa normalmente
+                const newConsecutiveDays = shouldReset
+                    ? 1
+                    : (progress.consecutiveDays || 0) + 1;
                 const today = new Date();
 
                 await ProgressRepository.UpdateConsecutiveDays(
@@ -120,9 +161,12 @@ class ProgressService {
                     newConsecutiveDays,
                     today
                 );
+
+                console.log(
+                    `✅ Novo dia! Dias consecutivos: ${newConsecutiveDays}`
+                );
             } else {
                 // Se não é novo dia, apenas atualiza a data do último estudo
-                // mas mantém os dias consecutivos
                 const progress = await ProgressRepository.FindByUserId(idUser);
                 const today = new Date();
 
@@ -130,6 +174,10 @@ class ProgressService {
                     idUser,
                     progress.consecutiveDays, // Mantém os dias consecutivos
                     today // Atualiza apenas a data
+                );
+
+                console.log(
+                    `📚 Mesmo dia! Apenas atualizando data. Dias: ${progress.consecutiveDays}`
                 );
             }
 
