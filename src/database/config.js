@@ -1,28 +1,16 @@
 import { Sequelize } from "sequelize";
+import "dotenv/config";
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: "postgres",
-    protocol: "postgres",
-    logging: process.env.NODE_ENV === "development" ? console.log : false,
+    logging: false,
     dialectOptions: {
-        ssl:
-            process.env.NODE_ENV === "production"
-                ? {
-                      require: true,
-                      rejectUnauthorized: false, 
-                  }
-                : false,
+        ssl: {
+            require: true,
+            rejectUnauthorized: false,
+        },
     },
-    pool: {
-        max: 5,
-        min: 0,
-        acquire: 30000,
-        idle: 10000,
-    },
-    define: {
-        timestamps: false,
-        freezeTableName: true,
-    },
+    dialectModule: await import("pg").then((mod) => mod.default),
 });
 
 export default sequelize;
