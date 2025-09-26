@@ -5,6 +5,7 @@ import SubjectController from "./controllers/SubjectController.js";
 import DeckController from "./controllers/DeckController.js";
 import CardController from "./controllers/CardController.js";
 import ProgressController from "./controllers/ProgressController.js";
+import AiQuestionsController from "./controllers/AiQuestionsController.js";
 
 const router = Router();
 
@@ -34,5 +35,8 @@ router.delete("/cards/:idCard", token.Validate, CardController.Delete);
 
 // Progress
 router.get("/progress", token.Validate, ProgressController.List);
+
+// AI Questions
+router.post("/ai-questions", token.Validate, AiQuestionsController.Generate);
 
 export default router;
