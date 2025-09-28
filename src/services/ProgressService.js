@@ -36,16 +36,12 @@ class ProgressService {
 
     async GetDecksToStudy(decks) {
         try {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
             const decksToStudy = decks.filter((deck) => {
                 if (!deck.nextReview) return false; // Deck sem data não precisa ser estudado
 
                 const reviewDate = new Date(deck.nextReview);
-                reviewDate.setHours(0, 0, 0, 0);
-
-                return reviewDate <= today;
+                const diffTime = reviewDate - new Date();
+                return diffTime < 0 || diffTime < 1000 * 60 * 60 * 24; // Vencido ou vence hoje
             });
 
             return decksToStudy.length;

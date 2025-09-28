@@ -80,16 +80,6 @@ class DeckService {
         }
     }
 
-    // async GetById(idDeck) {
-    //     try {
-    //         const deck = await DeckRepository.FindById(idDeck);
-    //         return deck;
-    //     } catch (error) {
-    //         console.error("Erro ao buscar deck: ", error.message);
-    //         throw new Error("Erro ao buscar deck.");
-    //     }
-    // }
-
     async Study(idUser, idDeck, difficulties) {
         try {
             // primeiro acha o deck pelo id
