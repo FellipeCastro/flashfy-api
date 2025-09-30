@@ -60,15 +60,12 @@ class AiQuestionsService {
             
             RETORNE APENAS O JSON VÁLIDO, SEM QUALQUER TEXTO ADICIONAL, COMENTÁRIOS OU EXPLICAÇÕES.`;
 
-            console.log("Enviando prompt para Gemini...");
-
             const ai = new GoogleGenAI({ apiKey });
             const result = await ai.models.generateContent({
                 model: "gemini-2.5-flash",
                 contents: prompt,
             });
             const responseText = result.text;
-            console.log("Resposta bruta:", responseText);
 
             // Função robusta para limpar e validar JSON
             const cleanAndParseJSON = (jsonString) => {
@@ -110,7 +107,7 @@ class AiQuestionsService {
                 cleaned = cleaned.replace(/:(\s*)'(true|false)'/g, ":$1$2");
                 cleaned = cleaned.replace(/:(\s*)"(true|false)"/g, ":$1$2");
 
-                console.log("JSON limpo:", cleaned);
+                console.log(cleaned);
 
                 return JSON.parse(cleaned);
             };

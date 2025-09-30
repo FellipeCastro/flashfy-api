@@ -2,10 +2,6 @@ import AiQuestionsService from "../services/AiQuestionsService.js";
 
 class AiQuestionsController {
     async Generate(req, res) {
-        // Configurar timeout longo (5 minutos)
-        req.setTimeout(300000);
-        res.setTimeout(300000);
-
         try {
             const { theme, difficulty, quantity } = req.body;
 

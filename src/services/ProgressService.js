@@ -7,6 +7,23 @@ class ProgressService {
             // Primeiro verificar e resetar se for novo dia
             await this.CheckAndResetForNewDay(idUser);
 
+            const decks = await DeckService.List(idUser);
+            const decksToStudy = await this.GetDecksToStudy(decks);
+
+            // Verifica se precisa resetar dias consecutivos (mais de 1 dia sem estudar)
+            const shouldReset = await this.ShouldResetConsecutiveDays(idUser);
+
+            if (shouldReset) {
+                console.log(
+                    "🔄 Resetando dias consecutivos (mais de 1 dia sem estudar)"
+                );
+                await ProgressRepository.UpdateConsecutiveDays(
+                    idUser,
+                    0,
+                    new Date()
+                );
+            }
+            
             // Buscar os dados atualizados
             let progress = await ProgressRepository.FindByUserId(idUser);
 
@@ -15,9 +32,6 @@ class ProgressService {
                 await ProgressRepository.Create(idUser);
                 progress = await ProgressRepository.FindByUserId(idUser);
             }
-
-            const decks = await DeckService.List(idUser);
-            const decksToStudy = await this.GetDecksToStudy(decks);
 
             return {
                 consecutiveDays: progress.consecutiveDays || 0,
@@ -89,6 +103,14 @@ class ProgressService {
         }
     }
 
+    IsSameDay(date1, date2) {
+        return (
+            date1.getFullYear() === date2.getFullYear() &&
+            date1.getMonth() === date2.getMonth() &&
+            date1.getDate() === date2.getDate()
+        );
+    }
+
     async ShouldResetConsecutiveDays(idUser) {
         try {
             const progress = await ProgressRepository.FindByUserId(idUser);
@@ -112,30 +134,8 @@ class ProgressService {
         }
     }
 
-    IsSameDay(date1, date2) {
-        return (
-            date1.getFullYear() === date2.getFullYear() &&
-            date1.getMonth() === date2.getMonth() &&
-            date1.getDate() === date2.getDate()
-        );
-    }
-
     async IncrementStudiedDecks(idUser) {
         try {
-            // Verifica se precisa resetar dias consecutivos (mais de 1 dia sem estudar)
-            const shouldReset = await this.ShouldResetConsecutiveDays(idUser);
-
-            if (shouldReset) {
-                console.log(
-                    "🔄 Resetando dias consecutivos (mais de 1 dia sem estudar)"
-                );
-                await ProgressRepository.UpdateConsecutiveDays(
-                    idUser,
-                    0,
-                    new Date()
-                );
-            }
-
             // Verifica se é novo dia e reseta studiedDecks se necessário
             const isNewDay = await this.CheckAndResetForNewDay(idUser);
 
