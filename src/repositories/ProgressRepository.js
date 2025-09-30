@@ -39,7 +39,7 @@ class ProgressRepository {
             const [affectedRows] = await Progress.update(
                 {
                     studiedDecks: 0,
-                    // ❌ REMOVER lastStudyDate daqui - será atualizado no UpdateConsecutiveDays
+                    lastStudyDate: today,
                 },
                 {
                     where: { idUser },
@@ -78,22 +78,14 @@ class ProgressRepository {
                     ? new Date(lastStudyDate)
                     : lastStudyDate;
 
-            console.log(
-                `🔧 UpdateConsecutiveDays - User: ${idUser}, Days: ${consecutiveDays}, Date: ${studyDate}`
-            );
-
             const [affectedRows] = await Progress.update(
                 {
                     consecutiveDays: consecutiveDays,
-                    lastStudyDate: studyDate, // ✅ AGORA atualiza a data do último estudo
+                    lastStudyDate: studyDate,
                 },
                 {
                     where: { idUser: idUser },
                 }
-            );
-
-            console.log(
-                `✅ Banco atualizado - Linhas afetadas: ${affectedRows}`
             );
 
             return { affectedRows };
@@ -103,47 +95,6 @@ class ProgressRepository {
                 error.message
             );
             throw new Error("Erro ao atualizar dias consecutivos.");
-        }
-    }
-
-    // ✅ NOVO MÉTODO: Apenas atualizar a data do último estudo
-    async UpdateLastStudyDate(idUser, lastStudyDate) {
-        try {
-            const studyDate =
-                typeof lastStudyDate === "string"
-                    ? new Date(lastStudyDate)
-                    : lastStudyDate;
-
-            const [affectedRows] = await Progress.update(
-                {
-                    lastStudyDate: studyDate,
-                },
-                {
-                    where: { idUser },
-                }
-            );
-
-            return { affectedRows };
-        } catch (error) {
-            console.error(
-                "Erro ao atualizar data do último estudo: ",
-                error.message
-            );
-            throw new Error("Erro ao atualizar data do último estudo.");
-        }
-    }
-
-    // ✅ MÉTODO para reset simples (sem alterar a data)
-    async ResetStudiedDecks(idUser) {
-        try {
-            const [affectedRows] = await Progress.update(
-                { studiedDecks: 0 },
-                { where: { idUser } }
-            );
-            return { affectedRows };
-        } catch (error) {
-            console.error("Erro ao resetar studiedDecks: ", error.message);
-            throw new Error("Erro ao resetar studiedDecks.");
         }
     }
 }
