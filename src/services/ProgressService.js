@@ -212,13 +212,12 @@ class ProgressService {
         if (!days || days === 0)
             return "Estude seus decks para começar uma nova sequência!";
         if (days === 1) return "Bom começo! Primeiro dia de estudo!";
-        if (days === 3) return "3 dias seguidos! Você está no caminho certo!";
         if (days === 7) return "Uma semana completa! Incrível!";
         if (days === 14) return "Duas semanas! Você é dedicado!";
         if (days === 30) return "Um mês inteiro! Você é inspirador!";
         if (days >= 100) return `${days} dias! Lenda viva!`;
 
-        return `Continue a jornada! ${days} dias consecutivos!`;
+        return `Foguinho ativo! ${days} dias consecutivos!`;
     }
 }
 
