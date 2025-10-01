@@ -10,7 +10,17 @@ class ProgressService {
             const decks = await DeckService.List(idUser);
             const decksToStudy = await this.GetDecksToStudy(decks);
 
-            // Verifica se precisa resetar dias consecutivos (mais de 1 dia sem estudar)
+            // Buscar os dados atualizados
+            let progress = await ProgressRepository.FindByUserId(idUser);
+
+            // Se não existir, criar um novo registro
+            if (!progress) {
+                await ProgressRepository.Create(idUser);
+                progress = await ProgressRepository.FindByUserId(idUser);
+            }
+
+            // VERIFICAÇÃO DE RESET MOVIDA PARA APÓS BUSCAR PROGRESSO
+            // Agora verifica se precisa resetar dias consecutivos (mais de 1 dia sem estudar)
             const shouldReset = await this.ShouldResetConsecutiveDays(idUser);
 
             if (shouldReset) {
@@ -22,14 +32,7 @@ class ProgressService {
                     0,
                     new Date()
                 );
-            }
-            
-            // Buscar os dados atualizados
-            let progress = await ProgressRepository.FindByUserId(idUser);
-
-            // Se não existir, criar um novo registro
-            if (!progress) {
-                await ProgressRepository.Create(idUser);
+                // Atualiza o progresso após o reset
                 progress = await ProgressRepository.FindByUserId(idUser);
             }
 
@@ -136,6 +139,23 @@ class ProgressService {
 
     async IncrementStudiedDecks(idUser) {
         try {
+            // OTIMIZAÇÃO: Buscar progresso uma única vez
+            const progress = await ProgressRepository.FindByUserId(idUser);
+
+            // Verifica se precisa resetar dias consecutivos (mais de 1 dia sem estudar)
+            const shouldReset = await this.ShouldResetConsecutiveDays(idUser);
+
+            if (shouldReset) {
+                console.log(
+                    "🔄 Resetando dias consecutivos (mais de 1 dia sem estudar)"
+                );
+                await ProgressRepository.UpdateConsecutiveDays(
+                    idUser,
+                    0,
+                    new Date()
+                );
+            }
+
             // Verifica se é novo dia e reseta studiedDecks se necessário
             const isNewDay = await this.CheckAndResetForNewDay(idUser);
 
@@ -144,12 +164,14 @@ class ProgressService {
 
             if (isNewDay) {
                 // Se é um novo dia, incrementa os dias consecutivos
-                const progress = await ProgressRepository.FindByUserId(idUser);
+                const currentProgress = await ProgressRepository.FindByUserId(
+                    idUser
+                );
 
                 // Se resetou acima, começa do 1, senão incrementa normalmente
                 const newConsecutiveDays = shouldReset
                     ? 1
-                    : (progress.consecutiveDays || 0) + 1;
+                    : (currentProgress.consecutiveDays || 0) + 1;
                 const today = new Date();
 
                 await ProgressRepository.UpdateConsecutiveDays(
@@ -163,17 +185,19 @@ class ProgressService {
                 );
             } else {
                 // Se não é novo dia, apenas atualiza a data do último estudo
-                const progress = await ProgressRepository.FindByUserId(idUser);
+                const currentProgress = await ProgressRepository.FindByUserId(
+                    idUser
+                );
                 const today = new Date();
 
                 await ProgressRepository.UpdateConsecutiveDays(
                     idUser,
-                    progress.consecutiveDays, // Mantém os dias consecutivos
+                    currentProgress.consecutiveDays, // Mantém os dias consecutivos
                     today // Atualiza apenas a data
                 );
 
                 console.log(
-                    `📚 Mesmo dia! Apenas atualizando data. Dias: ${progress.consecutiveDays}`
+                    `📚 Mesmo dia! Apenas atualizando data. Dias: ${currentProgress.consecutiveDays}`
                 );
             }
 
