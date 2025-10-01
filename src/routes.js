@@ -17,6 +17,8 @@ router.get("/", (req, res) => {
 router.post("/users/register", UserController.Register);
 router.post("/users/login", UserController.Login);
 router.get("/users/profile", token.Validate, UserController.Profile);
+router.put("/users/profile", token.Validate, UserController.Edit);
+router.delete("/users/profile", token.Validate, UserController.Delete);
 
 // Subjects
 router.post("/subjects", token.Validate, SubjectController.Create);

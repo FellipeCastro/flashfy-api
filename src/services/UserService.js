@@ -85,15 +85,27 @@ class UserService {
                 throw new Error("Usuário não encontrado.");
             }
 
-            // Garantir que a senha não seja retornada
-            const userWithoutPassword = { ...user.toJSON() };
-            if (userWithoutPassword.password) {
-                delete userWithoutPassword.password;
-            }
-
-            return userWithoutPassword;
+            return user;
         } catch (error) {
             console.error("Erro ao buscar perfil: ", error.message);
+            throw new Error(error.message);
+        }
+    }
+
+    async Edit(name, email, password, idUser) {
+        try {
+            return await UserRepository.Edit(name, email, password, idUser);
+        } catch (error) {
+            console.error("Erro ao editar perfil: ", error.message);
+            throw new Error(error.message);
+        }
+    }
+
+    async Delete(idUser) {
+        try {
+            return await UserRepository.Delete(idUser);
+        } catch (error) {
+            console.error("Erro ao deletar perfil: ", error.message);
             throw new Error(error.message);
         }
     }

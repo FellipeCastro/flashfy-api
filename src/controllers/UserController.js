@@ -52,6 +52,29 @@ class UserController {
             return res.status(404).json({ error: error.message });
         }
     }
+
+    async Edit(req, res) {
+        try {
+            const idUser = req.idUser;
+            const { name, email, password } = req.body;
+
+            const result = await UserService.Edit(name, email, password, idUser);
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
+    async Delete(req, res) {
+        try {
+            const idUser = req.idUser;
+
+            const result = await UserService.Delete(idUser);
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(400).json({ error: error.message });
+        }
+    }
 }
 
 export default new UserController();

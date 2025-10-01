@@ -1,4 +1,4 @@
-import { User, Progress, Deck, Subject } from "../models/associations.js";
+import { User, Progress, Deck, Card, Subject } from "../models/associations.js";
 
 class UserRepository {
     async ListByEmail(email) {
@@ -53,29 +53,49 @@ class UserRepository {
 
     async Profile(idUser) {
         try {
-            return await User.findByPk(idUser, {
+            const user = await User.findByPk(idUser, {
                 attributes: { exclude: ["password"] },
                 include: [
                     {
                         model: Progress,
                         as: "progress",
                     },
+                ],
+            });
+
+            if (!user) {
+                throw new Error("Usuário não encontrado.");
+            }
+
+            // Buscar contagens separadamente
+            const decksCount = await Deck.count({
+                where: { idUser },
+            });
+
+            const subjectsCount = await Subject.count({
+                where: { idUser },
+            });
+
+            const cardsCount = await Card.count({
+                include: [
                     {
                         model: Deck,
-                        as: "decks",
-                        include: [
-                            {
-                                model: Subject,
-                                as: "subject",
-                            },
-                        ],
-                    },
-                    {
-                        model: Subject,
-                        as: "subjects",
+                        as: "deck",
+                        where: { idUser },
                     },
                 ],
             });
+
+            // Formatar resposta
+            return {
+                idUser: user.idUser,
+                name: user.name,
+                email: user.email,
+                progress: user.progress,
+                decks: decksCount,
+                subjects: subjectsCount,
+                cards: cardsCount,
+            };
         } catch (error) {
             console.error("Erro ao buscar perfil: ", error.message);
             throw new Error("Erro ao buscar perfil.");
@@ -90,6 +110,69 @@ class UserRepository {
         } catch (error) {
             console.error("Erro ao buscar usuário: ", error.message);
             throw new Error("Erro ao buscar usuário.");
+        }
+    }
+
+    async Edit(name, email, password, idUser) {
+        try {
+            // Preparar dados para atualização
+            const updateData = {};
+
+            if (name) updateData.name = name;
+            if (email) updateData.email = email;
+            if (password) updateData.password = password;
+
+            // Verificar se há dados para atualizar
+            if (Object.keys(updateData).length === 0) {
+                throw new Error("Nenhum dado fornecido para atualização.");
+            }
+
+            // Atualizar usuário
+            const [affectedRows] = await User.update(updateData, {
+                where: { idUser },
+            });
+
+            if (affectedRows === 0) {
+                throw new Error("Usuário não encontrado.");
+            }
+
+            // Retornar usuário atualizado (sem senha)
+            return await User.findByPk(idUser, {
+                attributes: { exclude: ["password"] },
+                include: [
+                    {
+                        model: Progress,
+                        as: "progress",
+                    },
+                ],
+            });
+        } catch (error) {
+            console.error("Erro ao editar perfil do usuário: ", error.message);
+            throw new Error("Erro ao editar perfil do usuário.");
+        }
+    }
+
+    async Delete(idUser) {
+        try {
+            // Verificar se o usuário existe primeiro
+            const user = await User.findByPk(idUser);
+            if (!user) {
+                throw new Error("Usuário não encontrado.");
+            }
+
+            // Deletar usuário (as associações CASCADE devem lidar com o resto)
+            await User.destroy({
+                where: { idUser },
+            });
+
+            return {
+                success: true,
+                message:
+                    "Usuário e todos os dados associados foram excluídos com sucesso.",
+            };
+        } catch (error) {
+            console.error("Erro ao excluir perfil do usuário: ", error.message);
+            throw new Error("Erro ao excluir perfil do usuário.");
         }
     }
 }
