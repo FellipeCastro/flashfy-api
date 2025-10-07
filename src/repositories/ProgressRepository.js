@@ -1,5 +1,4 @@
-import { Progress, Deck } from "../models/associations.js";
-import { Op } from "sequelize";
+import { Progress } from "../models/associations.js";
 
 class ProgressRepository {
     async FindByUserId(idUser) {
@@ -34,12 +33,11 @@ class ProgressRepository {
         }
     }
 
-    async ResetStudiedDecksForNewDay(idUser, today) {
+    async UpdateStudiedDecks(idUser, studiedDecks) {
         try {
             const [affectedRows] = await Progress.update(
                 {
-                    studiedDecks: 0,
-                    lastStudyDate: today,
+                    studiedDecks: studiedDecks,
                 },
                 {
                     where: { idUser },
@@ -48,25 +46,8 @@ class ProgressRepository {
 
             return { affectedRows };
         } catch (error) {
-            console.error(
-                "Erro ao resetar studiedDecks para novo dia: ",
-                error.message
-            );
-            throw new Error("Erro ao resetar studiedDecks para novo dia.");
-        }
-    }
-
-    async IncrementStudiedDecks(idUser) {
-        try {
-            const [affectedRows] = await Progress.increment("studiedDecks", {
-                by: 1,
-                where: { idUser },
-            });
-
-            return { affectedRows };
-        } catch (error) {
-            console.error("Erro ao incrementar studiedDecks: ", error.message);
-            throw new Error("Erro ao incrementar studiedDecks.");
+            console.error("Erro ao atualizar studiedDecks: ", error.message);
+            throw new Error("Erro ao atualizar studiedDecks.");
         }
     }
 

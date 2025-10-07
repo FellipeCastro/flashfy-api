@@ -63,8 +63,8 @@ class DeckService {
             const newReviewDate = new Date(currentDate);
             newReviewDate.setDate(currentDate.getDate() + daysToAdd);
 
-            // Formata para YYYY-MM-DD
-            const formattedDate = newReviewDate.toISOString().split("T")[0];
+            // Formata para YYYY-MM-DD, com as horas 
+            const formattedDate = newReviewDate.toISOString();
 
             const result = await DeckRepository.UpdateNextReview(
                 formattedDate,
@@ -82,12 +82,16 @@ class DeckService {
 
     async Study(idUser, idDeck, difficulties) {
         try {
-            // primeiro acha o deck pelo id
+            // Primeiro acha o deck pelo id
             const deck = await DeckRepository.FindById(idDeck);
 
-            // validação do deck
-            if (!deck || !deck.cards) {
-                throw new Error("Deck não encontrado ou sem cards.");
+            // Validação do deck
+            if (!deck) {
+                throw new Error("Deck não encontrado.");
+            }
+
+            if (!deck.cards || deck.cards.length === 0) {
+                throw new Error("Deck não possui cards para estudar.");
             }
 
             if (difficulties.length !== deck.cards.length) {
@@ -96,25 +100,26 @@ class DeckService {
                 );
             }
 
-            // pega os cards do deck, e para cada card altera sua dificuldade com base nas dificuldades passadas
-            await Promise.all(
-                deck.cards.map(async (card, index) => {
-                    await CardService.UpdateDifficulty(
-                        difficulties[index],
-                        card.idCard
-                    );
-                })
-            );
+            // Atualiza a dificuldade de cada card
+            const updatePromises = deck.cards.map(async (card, index) => {
+                return await CardService.UpdateDifficulty(
+                    difficulties[index],
+                    card.idCard
+                );
+            });
 
-            // atualiza a data da proxima revisão do deck
+            // Aguarda todas as atualizações dos cards
+            await Promise.all(updatePromises);
+
+            // Atualiza a data da próxima revisão do deck
             await this.UpdateNextReview(idDeck);
 
-            // atualiza os dados de progresso
-            await ProgressService.IncrementStudiedDecks(idUser);
+            // Atualiza os dados de progresso
+            await ProgressService.UpdateProgress(idUser);
 
             // Retorna mensagem de sucesso
             return {
-                message: "Deck estudado com sucesso!",
+                message: "Deck estudado com sucesso!"
             };
         } catch (error) {
             console.error("Erro ao estudar deck: ", error.message);
