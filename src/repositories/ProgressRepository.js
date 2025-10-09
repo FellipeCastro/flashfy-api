@@ -51,23 +51,22 @@ class ProgressRepository {
         }
     }
 
-    async UpdateConsecutiveDays(idUser, consecutiveDays, lastStudyDate) {
+    async UpdateConsecutiveDays(idUser, consecutiveDays, lastStudyDate = null) {
         try {
-            // Se lastStudyDate for uma string, converte para Date
-            const studyDate =
-                typeof lastStudyDate === "string"
-                    ? new Date(lastStudyDate)
-                    : lastStudyDate;
+            const updateData = {
+                consecutiveDays: consecutiveDays,
+            };
 
-            const [affectedRows] = await Progress.update(
-                {
-                    consecutiveDays: consecutiveDays,
-                    lastStudyDate: studyDate,
-                },
-                {
-                    where: { idUser: idUser },
-                }
-            );
+            if (lastStudyDate !== null) {
+                updateData.lastStudyDate =
+                    typeof lastStudyDate === "string"
+                        ? new Date(lastStudyDate)
+                        : lastStudyDate;
+            }
+
+            const [affectedRows] = await Progress.update(updateData, {
+                where: { idUser: idUser },
+            });
 
             return { affectedRows };
         } catch (error) {
