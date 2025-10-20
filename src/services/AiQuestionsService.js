@@ -1,4 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
+import DeckRepository from "../repositories/DeckRepository.js";
+import CardRepository from "../repositories/CardRepository.js";
 
 class AiQuestionsService {
     async Generate(theme, difficulty, quantity) {
@@ -132,6 +134,89 @@ class AiQuestionsService {
         } catch (error) {
             console.error("Erro ao gerar questões com IA: ", error.message);
             throw new Error("Erro ao gerar questões com IA.");
+        }
+    }
+
+    async GenerateDeck(idUser, theme, idSubject, quantity) {
+        try {
+            const apiKey = process.env.GEMINI_API_KEY;
+            if (!apiKey) {
+                throw new Error("Chave da API do Gemini não configurada.");
+            }
+
+            const prompt = `
+            Aja como um especialista em criar flashcards de estudo.
+            Sua tarefa é gerar ${quantity} flashcards sobre o tema "${theme}".
+            As perguntas devem ser claras e as respostas devem ser diretas e informativas.
+            Sua resposta DEVE ser um objeto JSON válido, contendo uma chave "cards", que é um array de objetos. Cada objeto no array deve ter duas chaves: "question" e "answer".
+            Não adicione nenhum texto, comentário ou markdown antes ou depois do objeto JSON. A resposta deve ser apenas o JSON puro.
+            Exemplo de formato de saída:
+            {
+              "cards": [
+                {
+                  "question": "Qual evento marcou o início da Revolução Francesa?",
+                  "answer": "A Queda da Bastilha em 14 de julho de 1789."
+                }
+              ]
+            }
+        `;
+
+            // ===== CORREÇÃO FINAL AQUI =====
+            const ai = new GoogleGenAI({ apiKey });
+            // Usando o nome do modelo que já funciona no seu outro método
+            const result = await ai.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: [{ parts: [{ text: prompt }] }],
+            });
+            // ===================================
+
+            let responseText = result.text;
+
+            responseText = responseText
+                .replace(/```json/g, "")
+                .replace(/```/g, "")
+                .trim();
+
+            const parsedData = JSON.parse(responseText);
+
+            if (!parsedData.cards || !Array.isArray(parsedData.cards)) {
+                throw new Error(
+                    "A resposta da IA não continha um array de 'cards' válido."
+                );
+            }
+
+            const newDeck = await DeckRepository.Create(
+                idUser,
+                idSubject,
+                theme
+            );
+            if (!newDeck) {
+                throw new Error("Falha ao criar o deck no banco de dados.");
+            }
+            const idDeck = newDeck.idDeck;
+
+            const cardCreationPromises = parsedData.cards
+                .map((card) => {
+                    if (!card.question || !card.answer) {
+                        console.warn("Card inválido da IA, pulando:", card);
+                        return null;
+                    }
+                    return CardRepository.Create(
+                        idDeck,
+                        card.question,
+                        card.answer
+                    );
+                })
+                .filter((p) => p !== null);
+
+            await Promise.all(cardCreationPromises);
+
+            return DeckRepository.FindById(idDeck);
+        } catch (error) {
+            console.error("Erro detalhado ao gerar deck com IA: ", error);
+            throw new Error(
+                "Não foi possível gerar o deck com a IA. Tente novamente."
+            );
         }
     }
 }
