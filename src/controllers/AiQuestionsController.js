@@ -16,28 +16,32 @@ class AiQuestionsController {
         }
     }
     // Adicione este método dentro da classe AiQuestionsController
-        async CreateDeck(req, res) {
-            try {
-                const idUser = req.idUser; // Pegamos o ID do usuário logado
-                const { theme, idSubject, quantity } = req.body;
+    async CreateDeck(req, res) {
+        try {
+            const idUser = req.idUser; // Pegamos o ID do usuário logado
+            const { theme, idSubject, quantity } = req.body;
 
-                // Validação básica
-                if (!theme || !idSubject || !quantity) {
-                    return res.status(400).json({ error: "Tema, matéria e quantidade são obrigatórios." });
-                }
-
-                const result = await AiQuestionsService.GenerateDeck(
-                    idUser,
-                    theme,
-                    idSubject,
-                    quantity
-                );
-
-                return res.status(201).json(result);
-            } catch (error) {
-                return res.status(500).json({ error: error.message });
+            // Validação básica
+            if (!theme || !idSubject || !quantity) {
+                return res
+                    .status(400)
+                    .json({
+                        error: "Tema, matéria e quantidade são obrigatórios.",
+                    });
             }
+
+            const result = await AiQuestionsService.GenerateDeck(
+                idUser,
+                theme,
+                idSubject,
+                quantity
+            );
+
+            return res.status(201).json(result);
+        } catch (error) {
+            return res.status(500).json({ error: error.message });
         }
+    }
 }
- 
+
 export default new AiQuestionsController();

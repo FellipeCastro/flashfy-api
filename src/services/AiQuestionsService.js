@@ -137,16 +137,14 @@ class AiQuestionsService {
         }
     }
 
+    async GenerateDeck(idUser, theme, idSubject, quantity) {
+        try {
+            const apiKey = process.env.GEMINI_API_KEY;
+            if (!apiKey) {
+                throw new Error("Chave da API do Gemini não configurada.");
+            }
 
-
-async GenerateDeck(idUser, theme, idSubject, quantity) {
-    try {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            throw new Error("Chave da API do Gemini não configurada.");
-        }
-
-        const prompt = `
+            const prompt = `
             Aja como um especialista em criar flashcards de estudo.
             Sua tarefa é gerar ${quantity} flashcards sobre o tema "${theme}".
             As perguntas devem ser claras e as respostas devem ser diretas e informativas.
@@ -162,50 +160,65 @@ async GenerateDeck(idUser, theme, idSubject, quantity) {
               ]
             }
         `;
-        
-        // ===== CORREÇÃO FINAL AQUI =====
-        const ai = new GoogleGenAI({ apiKey });
-        // Usando o nome do modelo que já funciona no seu outro método
-        const result = await ai.models.generateContent({
-            model: "gemini-2.5-flash", 
-            contents: [{ parts: [{ text: prompt }] }],
-        });
-        // ===================================
-        
-        let responseText = result.text;
-        
-        responseText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
 
-        const parsedData = JSON.parse(responseText);
+            // ===== CORREÇÃO FINAL AQUI =====
+            const ai = new GoogleGenAI({ apiKey });
+            // Usando o nome do modelo que já funciona no seu outro método
+            const result = await ai.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: [{ parts: [{ text: prompt }] }],
+            });
+            // ===================================
 
-        if (!parsedData.cards || !Array.isArray(parsedData.cards)) {
-            throw new Error("A resposta da IA não continha um array de 'cards' válido.");
-        }
+            let responseText = result.text;
 
-        const newDeck = await DeckRepository.Create(idUser, idSubject, theme);
-        if (!newDeck) {
-            throw new Error("Falha ao criar o deck no banco de dados.");
-        }
-        const idDeck = newDeck.idDeck;
+            responseText = responseText
+                .replace(/```json/g, "")
+                .replace(/```/g, "")
+                .trim();
 
-        const cardCreationPromises = parsedData.cards.map(card => {
-            if (!card.question || !card.answer) {
-                console.warn("Card inválido da IA, pulando:", card);
-                return null;
+            const parsedData = JSON.parse(responseText);
+
+            if (!parsedData.cards || !Array.isArray(parsedData.cards)) {
+                throw new Error(
+                    "A resposta da IA não continha um array de 'cards' válido."
+                );
             }
-            return CardRepository.Create(idDeck, card.question, card.answer);
-        }).filter(p => p !== null);
 
-        await Promise.all(cardCreationPromises);
+            const newDeck = await DeckRepository.Create(
+                idUser,
+                idSubject,
+                theme
+            );
+            if (!newDeck) {
+                throw new Error("Falha ao criar o deck no banco de dados.");
+            }
+            const idDeck = newDeck.idDeck;
 
-        return DeckRepository.FindById(idDeck);
+            const cardCreationPromises = parsedData.cards
+                .map((card) => {
+                    if (!card.question || !card.answer) {
+                        console.warn("Card inválido da IA, pulando:", card);
+                        return null;
+                    }
+                    return CardRepository.Create(
+                        idDeck,
+                        card.question,
+                        card.answer
+                    );
+                })
+                .filter((p) => p !== null);
 
-    } catch (error) {
-        console.error("Erro detalhado ao gerar deck com IA: ", error); 
-        throw new Error("Não foi possível gerar o deck com a IA. Tente novamente.");
+            await Promise.all(cardCreationPromises);
+
+            return DeckRepository.FindById(idDeck);
+        } catch (error) {
+            console.error("Erro detalhado ao gerar deck com IA: ", error);
+            throw new Error(
+                "Não foi possível gerar o deck com a IA. Tente novamente."
+            );
+        }
     }
-}
-    
 }
 
 export default new AiQuestionsService();
