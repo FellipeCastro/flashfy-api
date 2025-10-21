@@ -39,9 +39,7 @@ router.delete("/cards/:idCard", token.Validate, CardController.Delete);
 router.get("/progress", token.Validate, ProgressController.List);
 
 // AI Questions
-router.post("/ai-questions", token.Validate, AiQuestionsController.Generate);
-
-// Criar deck a partir de perguntas geradas pela IA
+router.post("/ai/questions", token.Validate, AiQuestionsController.Generate);
 router.post("/ai/create-deck", token.Validate, AiQuestionsController.CreateDeck);
 
 export default router;
