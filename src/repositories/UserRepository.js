@@ -4,13 +4,7 @@ class UserRepository {
     async ListByEmail(email) {
         try {
             return await User.findOne({
-                where: { email },
-                include: [
-                    {
-                        model: Progress,
-                        as: "progress",
-                    },
-                ],
+                where: { email }
             });
         } catch (error) {
             console.error("Erro ao buscar usuário por e-mail: ", error.message);
@@ -48,6 +42,63 @@ class UserRepository {
         } catch (error) {
             console.error("Erro ao registrar usuário: ", error.message);
             throw new Error("Erro ao registrar usuário.");
+        }
+    }
+
+    async RegisterWithGoogle(name, email, googleId) {
+        try {
+            // Criar usuário sem senha
+            const user = await User.create({
+                name,
+                email,
+                password: null, // Usuários do Google não têm senha
+                googleId,
+            });
+
+            // Cria progresso automaticamente para o novo usuário
+            await Progress.create({
+                idUser: user.idUser,
+                consecutiveDays: 0,
+                studiedDecks: 0,
+                decksToStudy: 0,
+                lastStudyDate: null,
+            });
+
+            // Retorna usuário sem a senha
+            return await User.findByPk(user.idUser, {
+                attributes: { exclude: ["password"] },
+                include: [
+                    {
+                        model: Progress,
+                        as: "progress",
+                    },
+                ],
+            });
+        } catch (error) {
+            console.error(
+                "Erro ao registrar usuário com Google: ",
+                error.message
+            );
+            throw new Error("Erro ao registrar usuário com Google.");
+        }
+    }
+
+    async UpdateGoogleId(idUser, googleId) {
+        try {
+            await User.update({ googleId }, { where: { idUser } });
+
+            return await User.findByPk(idUser, {
+                attributes: { exclude: ["password"] },
+                include: [
+                    {
+                        model: Progress,
+                        as: "progress",
+                    },
+                ],
+            });
+        } catch (error) {
+            console.error("Erro ao atualizar Google ID: ", error.message);
+            throw new Error("Erro ao atualizar Google ID.");
         }
     }
 

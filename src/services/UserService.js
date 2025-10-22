@@ -77,6 +77,58 @@ class UserService {
         }
     }
 
+    async GoogleAuth(name, email, googleId) {
+        try {
+            // Verificar se usuário já existe pelo email
+            let user = await UserRepository.ListByEmail(email);
+
+            if (!user) {
+                // Se não existe, criar novo usuário sem senha
+                user = await UserRepository.RegisterWithGoogle(
+                    name,
+                    email,
+                    googleId
+                );
+
+                // Criar matérias padrão de forma não-bloqueante
+                defaultSubjects.forEach(async (subject) => {
+                    try {
+                        await SubjectService.Create(
+                            user.idUser,
+                            subject.name,
+                            subject.color
+                        );
+                    } catch (error) {
+                        console.error(
+                            `Erro ao criar matéria padrão ${subject.name}:`,
+                            error.message
+                        );
+                    }
+                });
+            } else {
+                // Se usuário existe, atualizar o googleId (caso não tenha)
+                if (!user.googleId) {
+                    await UserRepository.UpdateGoogleId(user.idUser, googleId);
+                }
+            }
+
+            // Gerar token
+            const token = Token.Create(user.idUser);
+
+            // Remover senha e retornar
+            const userWithoutPassword = { ...user.toJSON() };
+            delete userWithoutPassword.password;
+
+            return {
+                ...userWithoutPassword,
+                token,
+            };
+        } catch (error) {
+            console.error("Erro ao autenticar com Google: ", error.message);
+            throw new Error(error.message);
+        }
+    }
+
     async Profile(idUser) {
         try {
             const user = await UserRepository.Profile(idUser);

@@ -43,6 +43,29 @@ class UserController {
         }
     }
 
+    async GoogleAuth(req, res) {
+        try {
+            const { token, email, name, googleId } = req.body;
+
+            if (!email || !name || !googleId) {
+                return res
+                    .status(400)
+                    .json({ error: "Dados do Google incompletos." });
+            }
+
+            const formattedEmail = email.toLowerCase().trim();
+
+            const result = await UserService.GoogleAuth(
+                name,
+                formattedEmail,
+                googleId
+            );
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(401).json({ error: error.message });
+        }
+    }
+
     async Profile(req, res) {
         try {
             const idUser = req.idUser;
@@ -58,7 +81,12 @@ class UserController {
             const idUser = req.idUser;
             const { name, email, password } = req.body;
 
-            const result = await UserService.Edit(name, email, password, idUser);
+            const result = await UserService.Edit(
+                name,
+                email,
+                password,
+                idUser
+            );
             return res.status(200).json(result);
         } catch (error) {
             return res.status(400).json({ error: error.message });

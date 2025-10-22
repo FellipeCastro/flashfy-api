@@ -10,12 +10,13 @@ import AiQuestionsController from "./controllers/AiQuestionsController.js";
 const router = Router();
 
 router.get("/", (req, res) => {
-    res.send("Servidor funcionando!");
+    res.json({ message: "Servidor funcionando!" });
 });
 
 // Users
 router.post("/users/register", UserController.Register);
 router.post("/users/login", UserController.Login);
+router.post("/users/google-auth", UserController.GoogleAuth);
 router.get("/users/profile", token.Validate, UserController.Profile);
 router.put("/users/profile", token.Validate, UserController.Edit);
 router.delete("/users/profile", token.Validate, UserController.Delete);
@@ -40,6 +41,10 @@ router.get("/progress", token.Validate, ProgressController.List);
 
 // AI Questions
 router.post("/ai/questions", token.Validate, AiQuestionsController.Generate);
-router.post("/ai/create-deck", token.Validate, AiQuestionsController.CreateDeck);
+router.post(
+    "/ai/create-deck",
+    token.Validate,
+    AiQuestionsController.CreateDeck
+);
 
 export default router;
