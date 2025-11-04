@@ -19,7 +19,27 @@ class DeckService {
 
     async List(idUser) {
         try {
-            const result = await DeckRepository.List(idUser);
+            const decks = await DeckRepository.List(idUser);
+
+            const result = decks.sort((a, b) => {
+                const now = new Date();
+
+                // Tratamento para decks sem nextReview
+                if (!a.nextReview && !b.nextReview) return 0;
+                if (!a.nextReview) return 1;
+                if (!b.nextReview) return -1;
+
+                const aDate = new Date(a.nextReview);
+                const bDate = new Date(b.nextReview);
+
+                // Decks com nextReview no passado têm prioridade
+                if (aDate < now && bDate >= now) return -1;
+                if (bDate < now && aDate >= now) return 1;
+
+                // Ordenação por data mais próxima
+                return aDate - bDate;
+            });
+
             return result;
         } catch (error) {
             console.error("Erro ao listar decks: ", error.message);
@@ -63,7 +83,7 @@ class DeckService {
             const newReviewDate = new Date(currentDate);
             newReviewDate.setDate(currentDate.getDate() + daysToAdd);
 
-            // Formata para YYYY-MM-DD, com as horas 
+            // Formata para YYYY-MM-DD, com as horas
             const formattedDate = newReviewDate.toISOString();
 
             const result = await DeckRepository.UpdateNextReview(
@@ -119,7 +139,7 @@ class DeckService {
 
             // Retorna mensagem de sucesso
             return {
-                message: "Deck estudado com sucesso!"
+                message: "Deck estudado com sucesso!",
             };
         } catch (error) {
             console.error("Erro ao estudar deck: ", error.message);
