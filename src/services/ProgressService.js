@@ -13,6 +13,7 @@ class ProgressService {
 
             // Verificar se é novo dia
             const isNewDay = await this.IsNewDay(idUser);
+            console.log(isNewDay);
 
             // Se for novo dia, resetar studiedDecks para 0
             if (isNewDay) {
@@ -29,7 +30,8 @@ class ProgressService {
 
             const diffTime = Math.abs(today - lastStudyDate);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const shouldReset = !progress || !progress.lastStudyDate ? false : diffDays > 1;
+            const shouldReset =
+                !progress || !progress.lastStudyDate ? false : diffDays > 1;
 
             if (shouldReset) {
                 console.log(
@@ -119,33 +121,17 @@ class ProgressService {
 
             // Verifica se é novo dia para determinar se incrementa consecutiveDays
             const isNewDay = await this.IsNewDay(idUser);
-            let newConsecutiveDays;
 
             if (isNewDay) {
                 // Se for novo dia, incrementa 1
-                newConsecutiveDays = progress.consecutiveDays + 1;
-                console.log("✅ Primeiro estudo do dia - consecutiveDays: 1");
-            } else {
-                // Se não for novo dia, mantém os dias consecutivos atuais
-                newConsecutiveDays = progress.consecutiveDays;
-                console.log(
-                    `📚 Estudo no mesmo dia - mantendo consecutiveDays: ${newConsecutiveDays}`
+                const newConsecutiveDays = progress.consecutiveDays + 1;
+                // Atualiza consecutiveDays e lastStudyDate
+                await ProgressRepository.UpdateConsecutiveDays(
+                    idUser,
+                    newConsecutiveDays,
+                    today
                 );
             }
-
-            // Atualiza consecutiveDays e lastStudyDate
-            await ProgressRepository.UpdateConsecutiveDays(
-                idUser,
-                newConsecutiveDays,
-                today
-            );
-
-            return {
-                studiedDecks: newStudiedDecks,
-                consecutiveDays: newConsecutiveDays,
-                lastStudyDate: today,
-                isNewDay: isNewDay,
-            };
         } catch (error) {
             console.error("Erro ao atualizar progresso: ", error.message);
             throw new Error("Erro ao atualizar progresso.");
