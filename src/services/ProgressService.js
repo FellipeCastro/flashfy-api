@@ -13,7 +13,6 @@ class ProgressService {
 
             // Verificar se é novo dia
             const isNewDay = await this.IsNewDay(idUser);
-            console.log(isNewDay);
 
             // Se for novo dia, resetar studiedDecks para 0
             if (isNewDay) {

@@ -65,56 +65,17 @@ class AiQuestionsService {
             const ai = new GoogleGenAI({ apiKey });
             const result = await ai.models.generateContent({
                 model: "gemini-2.5-flash",
-                contents: prompt,
+                contents: [{ parts: [{ text: prompt }] }],
             });
-            const responseText = result.text;
 
-            // Função robusta para limpar e validar JSON
-            const cleanAndParseJSON = (jsonString) => {
-                let cleaned = jsonString.trim();
+            let responseText = result.text;
 
-                // Remove qualquer texto antes do primeiro { e depois do último }
-                const firstBrace = cleaned.indexOf("{");
-                const lastBrace = cleaned.lastIndexOf("}");
+            responseText = responseText
+                .replace(/```json/g, "")
+                .replace(/```/g, "")
+                .trim();
 
-                if (firstBrace === -1 || lastBrace === -1) {
-                    throw new Error("JSON não encontrado na resposta");
-                }
-
-                cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-
-                // Remove code blocks
-                cleaned = cleaned.replace(/```(json)?/g, "");
-
-                // Substitui aspas simples por duplas
-                cleaned = cleaned.replace(/'/g, '"');
-
-                // Corrige vírgulas trailing
-                cleaned = cleaned.replace(/,\s*}/g, "}");
-                cleaned = cleaned.replace(/,\s*]/g, "]");
-
-                // Remove quebras de linha e tabs
-                cleaned = cleaned.replace(/[\n\t]/g, " ");
-
-                // Remove múltiplos espaços
-                cleaned = cleaned.replace(/\s+/g, " ");
-
-                // Corrige chaves sem aspas
-                cleaned = cleaned.replace(
-                    /([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$])(\s:)/g,
-                    '$1"$2"$3'
-                );
-
-                // Corrige valores booleanos
-                cleaned = cleaned.replace(/:(\s*)'(true|false)'/g, ":$1$2");
-                cleaned = cleaned.replace(/:(\s*)"(true|false)"/g, ":$1$2");
-
-                console.log(cleaned);
-
-                return JSON.parse(cleaned);
-            };
-
-            const parsedData = cleanAndParseJSON(responseText);
+            const parsedData = JSON.parse(responseText);
 
             // Garantir que cada questão tenha um ID único baseado no índice
             const questionsWithId = parsedData.questions.map(
@@ -161,14 +122,11 @@ class AiQuestionsService {
             }
         `;
 
-            // ===== CORREÇÃO FINAL AQUI =====
             const ai = new GoogleGenAI({ apiKey });
-            // Usando o nome do modelo que já funciona no seu outro método
             const result = await ai.models.generateContent({
                 model: "gemini-2.5-flash",
                 contents: [{ parts: [{ text: prompt }] }],
             });
-            // ===================================
 
             let responseText = result.text;
 

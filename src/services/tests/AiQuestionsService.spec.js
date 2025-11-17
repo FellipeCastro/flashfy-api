@@ -1,23 +1,6 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 
-// 1. Mock do SDK do Google GenAI
-// Criamos uma fn "espiã" que podemos controlar
-const mockGenerateContent = vi.fn();
-
-vi.mock("@google/genai", () => {
-    // Mockamos a classe 'GoogleGenAI'
-    const GoogleGenAI = vi.fn(() => ({
-        // Mockamos a propriedade 'models'
-        models: {
-            // Mockamos o método 'generateContent'
-            generateContent: mockGenerateContent,
-        },
-    }));
-
-    return { GoogleGenAI };
-});
-
-// 2. Mock dos Repositórios
+// 1. MOCKANDO AS DEPENDÊNCIAS
 vi.mock("../../repositories/DeckRepository.js", () => ({
     default: {
         Create: vi.fn(),
@@ -31,182 +14,421 @@ vi.mock("../../repositories/CardRepository.js", () => ({
     },
 }));
 
-// --- IMPORTS ---
+vi.mock("@google/genai", () => ({
+    GoogleGenAI: vi.fn().mockImplementation(() => ({
+        models: {
+            generateContent: vi.fn(),
+        },
+    })),
+}));
+
+// Importamos os mocks para poder controlá-los
 import { GoogleGenAI } from "@google/genai";
 import DeckRepository from "../../repositories/DeckRepository.js";
 import CardRepository from "../../repositories/CardRepository.js";
+
+// 2. IMPORTAR O SERVIÇO
 import AiQuestionsService from "../AiQuestionsService.js";
 
 // --- INÍCIO DOS TESTES ---
 
 describe("AiQuestionsService", () => {
-    // Definimos a API Key antes de cada teste
+    const originalEnv = process.env;
+
     beforeEach(() => {
         vi.resetAllMocks();
-        // Simula a variável de ambiente
-        vi.stubEnv("GEMINI_API_KEY", "fake-key");
+        process.env.GEMINI_API_KEY = "test-api-key";
+
+        // Mock do console.error para todos os testes
+        vi.spyOn(console, "error").mockImplementation(() => {});
     });
 
-    // Limpamos a simulação depois de cada teste
     afterEach(() => {
-        vi.unstubEnv("GEMINI_API_KEY");
+        process.env = originalEnv;
+        vi.restoreAllMocks();
     });
 
-    describe("Generate (Quiz)", () => {
-        const mockApiResponse = `
-            \`\`\`json
-            {
-                "questions": [
-                    {
-                        "text": "Qual a capital da França?",
-                        "alternatives": [
-                            {"id": "a", "text": "Berlim", "isCorrect": false},
-                            {"id": "b", "text": "Paris", "isCorrect": true}
-                        ],
-                        "explanation": "Paris é a capital."
-                    }
-                ]
-            }
-            \`\`\`
-        `;
+    // --- Testes para Generate ---
+    describe("Generate", () => {
+        test("Deve lançar erro quando a chave da API não está configurada", async () => {
+            process.env.GEMINI_API_KEY = "";
 
-        test("Deve gerar questões, limpar o JSON e adicionar IDs", async () => {
-            // Arrange
-            mockGenerateContent.mockResolvedValue({ text: mockApiResponse });
+            await expect(
+                AiQuestionsService.Generate("Matemática", "Fácil", 5)
+            ).rejects.toThrow("Erro ao gerar questões com IA.");
+        });
 
-            // Act
+        test("Deve gerar questões com sucesso", async () => {
+            const mockResponse = {
+                text: JSON.stringify({
+                    questions: [
+                        {
+                            text: "Qual a capital da França?",
+                            alternatives: [
+                                { id: "a", text: "Londres", isCorrect: false },
+                                { id: "b", text: "Paris", isCorrect: true },
+                                { id: "c", text: "Roma", isCorrect: false },
+                                { id: "d", text: "Berlim", isCorrect: false },
+                            ],
+                            explanation: "Paris é a capital da França",
+                        },
+                    ],
+                }),
+            };
+
+            // Mock específico para este teste
+            const mockGenerateContent = vi.fn().mockResolvedValue(mockResponse);
+            GoogleGenAI.mockImplementation(() => ({
+                models: {
+                    generateContent: mockGenerateContent,
+                },
+            }));
+
             const result = await AiQuestionsService.Generate(
-                "História",
+                "Geografia",
                 "Fácil",
                 1
             );
 
-            // Assert
-            // Verifica se a classe da IA foi instanciada
-            expect(GoogleGenAI).toHaveBeenCalledWith({ apiKey: "fake-key" });
-            // Verifica se o método da IA foi chamado
-            expect(mockGenerateContent).toHaveBeenCalled();
-            // Verifica o resultado formatado
-            expect(result.theme).toBe("História");
-            expect(result.questions).toHaveLength(1);
-            expect(result.questions[0].text).toBe("Qual a capital da França?");
-            // Verifica se o ID foi adicionado
-            expect(result.questions[0].id).toBe(1);
+            expect(GoogleGenAI).toHaveBeenCalledWith({
+                apiKey: "test-api-key",
+            });
+            expect(mockGenerateContent).toHaveBeenCalledWith({
+                model: "gemini-2.5-flash",
+                contents: expect.stringContaining("Geografia"),
+            });
+            expect(result).toEqual({
+                theme: "Geografia",
+                difficulty: "Fácil",
+                quantity: 1,
+                questions: [
+                    {
+                        id: 1,
+                        text: "Qual a capital da França?",
+                        alternatives: [
+                            { id: "a", text: "Londres", isCorrect: false },
+                            { id: "b", text: "Paris", isCorrect: true },
+                            { id: "c", text: "Roma", isCorrect: false },
+                            { id: "d", text: "Berlim", isCorrect: false },
+                        ],
+                        explanation: "Paris é a capital da França",
+                    },
+                ],
+            });
         });
 
-        test("Deve falhar se a API Key não estiver configurada", async () => {
-            // Arrange
-            vi.unstubEnv("GEMINI_API_KEY"); // Remove a key
-            vi.stubEnv("GEMINI_API_KEY", undefined);
+        test("Deve lidar com resposta da IA contendo code blocks", async () => {
+            const mockResponse = {
+                text:
+                    "```json\n" +
+                    JSON.stringify({
+                        questions: [
+                            {
+                                text: "Teste com code block",
+                                alternatives: [
+                                    {
+                                        id: "a",
+                                        text: "Opção A",
+                                        isCorrect: false,
+                                    },
+                                    {
+                                        id: "b",
+                                        text: "Opção B",
+                                        isCorrect: true,
+                                    },
+                                    {
+                                        id: "c",
+                                        text: "Opção C",
+                                        isCorrect: false,
+                                    },
+                                    {
+                                        id: "d",
+                                        text: "Opção D",
+                                        isCorrect: false,
+                                    },
+                                ],
+                                explanation: "Explicação teste",
+                            },
+                        ],
+                    }) +
+                    "\n```",
+            };
 
-            // Act & Assert
-            await expect(
-                AiQuestionsService.Generate("Tema", "Fácil", 1)
-            ).rejects.toThrow("Chave API não configurada");
+            const mockGenerateContent = vi.fn().mockResolvedValue(mockResponse);
+            GoogleGenAI.mockImplementation(() => ({
+                models: {
+                    generateContent: mockGenerateContent,
+                },
+            }));
+
+            const result = await AiQuestionsService.Generate(
+                "Teste",
+                "Médio",
+                1
+            );
+
+            expect(result.questions[0].text).toBe("Teste com code block");
         });
 
-        test("Deve falhar se a IA retornar um JSON inválido", async () => {
-            // Arrange
-            mockGenerateContent.mockResolvedValue({
-                text: "Ops, algo deu errado.",
-            }); // Não é JSON
+        test("Deve lançar erro quando a resposta da IA não contém JSON válido", async () => {
+            const mockResponse = {
+                text: "Resposta inválida sem JSON",
+            };
 
-            // Act & Assert
-            // A falha interna será "JSON não encontrado na resposta",
-            // mas o service encapsula como "Erro ao gerar questões com IA."
+            const mockGenerateContent = vi.fn().mockResolvedValue(mockResponse);
+            GoogleGenAI.mockImplementation(() => ({
+                models: {
+                    generateContent: mockGenerateContent,
+                },
+            }));
+
             await expect(
-                AiQuestionsService.Generate("Tema", "Fácil", 1)
+                AiQuestionsService.Generate("Teste", "Difícil", 1)
             ).rejects.toThrow("Erro ao gerar questões com IA.");
+        });
+
+        test("Deve garantir IDs únicos para múltiplas questões", async () => {
+            const mockResponse = {
+                text: JSON.stringify({
+                    questions: [
+                        {
+                            text: "Pergunta 1",
+                            alternatives: [
+                                { id: "a", text: "A", isCorrect: false },
+                                { id: "b", text: "B", isCorrect: true },
+                                { id: "c", text: "C", isCorrect: false },
+                                { id: "d", text: "D", isCorrect: false },
+                            ],
+                            explanation: "Exp 1",
+                        },
+                        {
+                            text: "Pergunta 2",
+                            alternatives: [
+                                { id: "a", text: "A", isCorrect: false },
+                                { id: "b", text: "B", isCorrect: true },
+                                { id: "c", text: "C", isCorrect: false },
+                                { id: "d", text: "D", isCorrect: false },
+                            ],
+                            explanation: "Exp 2",
+                        },
+                    ],
+                }),
+            };
+
+            const mockGenerateContent = vi.fn().mockResolvedValue(mockResponse);
+            GoogleGenAI.mockImplementation(() => ({
+                models: {
+                    generateContent: mockGenerateContent,
+                },
+            }));
+
+            const result = await AiQuestionsService.Generate(
+                "Teste",
+                "Médio",
+                2
+            );
+
+            expect(result.questions[0].id).toBe(1);
+            expect(result.questions[1].id).toBe(2);
+            expect(result.quantity).toBe(2);
         });
     });
 
-    describe("GenerateDeck (Flashcards)", () => {
-        const mockApiResponse = `
-            \`\`\`json
-            {
-                "cards": [
-                    { "question": "Q1", "answer": "A1" },
-                    { "question": "Q2", "answer": "A2" }
-                ]
-            }
-            \`\`\`
-        `;
-        const mockNewDeck = { idDeck: 99, title: "História" };
-        const mockFullDeck = {
-            ...mockNewDeck,
-            cards: [{ idCard: 1, question: "Q1", answer: "A1" }],
-        };
+    // --- Testes para GenerateDeck ---
+    describe("GenerateDeck", () => {
+        test("Deve lançar erro quando a chave da API não está configurada", async () => {
+            process.env.GEMINI_API_KEY = "";
 
-        test("Deve gerar um deck, salvar no banco e retornar o deck", async () => {
-            // Arrange
-            mockGenerateContent.mockResolvedValue({ text: mockApiResponse });
-            DeckRepository.Create.mockResolvedValue(mockNewDeck);
-            CardRepository.Create.mockResolvedValue(true);
-            DeckRepository.FindById.mockResolvedValue(mockFullDeck); // Retorno final
-
-            // Act
-            const result = await AiQuestionsService.GenerateDeck(
-                1, // idUser
-                "História", // theme
-                1, // idSubject
-                2 // quantity
+            await expect(
+                AiQuestionsService.GenerateDeck(1, "História", 1, 5)
+            ).rejects.toThrow(
+                "Não foi possível gerar o deck com a IA. Tente novamente."
             );
-
-            // Assert
-            // 1. Chamou a IA
-            expect(GoogleGenAI).toHaveBeenCalledWith({ apiKey: "fake-key" });
-            expect(mockGenerateContent).toHaveBeenCalled();
-            // 2. Criou o Deck
-            expect(DeckRepository.Create).toHaveBeenCalledWith(
-                1, // idUser
-                1, // idSubject
-                "História" // theme
-            );
-            // 3. Criou os Cards (em loop)
-            expect(CardRepository.Create).toHaveBeenCalledTimes(2);
-            expect(CardRepository.Create).toHaveBeenCalledWith(99, "Q1", "A1");
-            expect(CardRepository.Create).toHaveBeenCalledWith(99, "Q2", "A2");
-            // 4. Buscou o deck final
-            expect(DeckRepository.FindById).toHaveBeenCalledWith(99);
-            // 5. Retornou o deck completo
-            expect(result).toEqual(mockFullDeck);
         });
 
-        test("Deve pular cards inválidos retornados pela IA", async () => {
-            // Arrange
-            const dirtyApiResponse = `
-            {
-                "cards": [
-                    { "question": "Q1", "answer": "A1" },
-                    { "question": "Q2_SEM_RESPOSTA" } 
-                ]
-            }
-            `;
-            mockGenerateContent.mockResolvedValue({ text: dirtyApiResponse });
-            DeckRepository.Create.mockResolvedValue(mockNewDeck);
-            CardRepository.Create.mockResolvedValue(true);
+        test("Deve criar deck e cards com sucesso", async () => {
+            const mockDeck = { idDeck: 123 };
+            const mockCardsResponse = {
+                text: JSON.stringify({
+                    cards: [
+                        { question: "Pergunta 1", answer: "Resposta 1" },
+                        { question: "Pergunta 2", answer: "Resposta 2" },
+                    ],
+                }),
+            };
 
-            // Act
-            await AiQuestionsService.GenerateDeck(1, "Tema", 1, 2);
+            const mockGenerateContent = vi
+                .fn()
+                .mockResolvedValue(mockCardsResponse);
+            GoogleGenAI.mockImplementation(() => ({
+                models: {
+                    generateContent: mockGenerateContent,
+                },
+            }));
 
-            // Assert
-            // Deve ter chamado a criação de card APENAS UMA VEZ
-            expect(CardRepository.Create).toHaveBeenCalledTimes(1);
-            expect(CardRepository.Create).toHaveBeenCalledWith(99, "Q1", "A1");
-        });
-
-        test("Deve falhar se a IA não retornar um array de 'cards'", async () => {
-            // Arrange
-            mockGenerateContent.mockResolvedValue({
-                text: '{ "data": "formato_errado" }',
+            DeckRepository.Create.mockResolvedValue(mockDeck);
+            CardRepository.Create.mockResolvedValue({});
+            DeckRepository.FindById.mockResolvedValue({
+                ...mockDeck,
+                cards: [],
             });
 
-            // Act & Assert
+            const result = await AiQuestionsService.GenerateDeck(
+                1,
+                "Ciências",
+                1,
+                2
+            );
+
+            expect(DeckRepository.Create).toHaveBeenCalledWith(
+                1,
+                1,
+                "Ciências"
+            );
+            expect(CardRepository.Create).toHaveBeenCalledTimes(2);
+            expect(CardRepository.Create).toHaveBeenCalledWith(
+                123,
+                "Pergunta 1",
+                "Resposta 1"
+            );
+            expect(CardRepository.Create).toHaveBeenCalledWith(
+                123,
+                "Pergunta 2",
+                "Resposta 2"
+            );
+            expect(DeckRepository.FindById).toHaveBeenCalledWith(123);
+            expect(result).toEqual({ ...mockDeck, cards: [] });
+        });
+
+        test("Deve lidar com resposta da IA contendo code blocks no GenerateDeck", async () => {
+            const mockDeck = { idDeck: 123 };
+            const mockCardsResponse = {
+                text:
+                    "```json\n" +
+                    JSON.stringify({
+                        cards: [
+                            {
+                                question: "Pergunta com block",
+                                answer: "Resposta",
+                            },
+                        ],
+                    }) +
+                    "\n```",
+            };
+
+            const mockGenerateContent = vi
+                .fn()
+                .mockResolvedValue(mockCardsResponse);
+            GoogleGenAI.mockImplementation(() => ({
+                models: {
+                    generateContent: mockGenerateContent,
+                },
+            }));
+
+            DeckRepository.Create.mockResolvedValue(mockDeck);
+            CardRepository.Create.mockResolvedValue({});
+            DeckRepository.FindById.mockResolvedValue(mockDeck);
+
+            await AiQuestionsService.GenerateDeck(1, "Teste", 1, 1);
+
+            expect(CardRepository.Create).toHaveBeenCalledWith(
+                123,
+                "Pergunta com block",
+                "Resposta"
+            );
+        });
+
+        test("Deve filtrar cards inválidos da resposta da IA", async () => {
+            const mockDeck = { idDeck: 123 };
+            const mockCardsResponse = {
+                text: JSON.stringify({
+                    cards: [
+                        {
+                            question: "Pergunta válida",
+                            answer: "Resposta válida",
+                        },
+                        { question: null, answer: "Resposta inválida" }, // Card inválido
+                        {
+                            question: "Pergunta válida 2",
+                            answer: "Resposta válida 2",
+                        },
+                    ],
+                }),
+            };
+
+            const mockGenerateContent = vi
+                .fn()
+                .mockResolvedValue(mockCardsResponse);
+            GoogleGenAI.mockImplementation(() => ({
+                models: {
+                    generateContent: mockGenerateContent,
+                },
+            }));
+
+            DeckRepository.Create.mockResolvedValue(mockDeck);
+            CardRepository.Create.mockResolvedValue({});
+            DeckRepository.FindById.mockResolvedValue(mockDeck);
+
+            await AiQuestionsService.GenerateDeck(1, "Teste", 1, 3);
+
+            expect(CardRepository.Create).toHaveBeenCalledTimes(2);
+            // Verifica que apenas os cards válidos foram criados
+            expect(CardRepository.Create).toHaveBeenCalledWith(
+                123,
+                "Pergunta válida",
+                "Resposta válida"
+            );
+            expect(CardRepository.Create).toHaveBeenCalledWith(
+                123,
+                "Pergunta válida 2",
+                "Resposta válida 2"
+            );
+        });
+
+        test("Deve lançar erro quando a resposta da IA não contém array de cards válido", async () => {
+            const mockCardsResponse = {
+                text: JSON.stringify({ invalid: "structure" }),
+            };
+
+            const mockGenerateContent = vi
+                .fn()
+                .mockResolvedValue(mockCardsResponse);
+            GoogleGenAI.mockImplementation(() => ({
+                models: {
+                    generateContent: mockGenerateContent,
+                },
+            }));
+
             await expect(
-                AiQuestionsService.GenerateDeck(1, "Tema", 1, 2)
-            ).rejects.toThrow("Não foi possível gerar o deck com a IA.");
-            // Garante que não tentou salvar nada
-            expect(DeckRepository.Create).not.toHaveBeenCalled();
+                AiQuestionsService.GenerateDeck(1, "Teste", 1, 1)
+            ).rejects.toThrow(
+                "Não foi possível gerar o deck com a IA. Tente novamente."
+            );
+        });
+
+        test("Deve lançar erro quando falha ao criar o deck", async () => {
+            const mockCardsResponse = {
+                text: JSON.stringify({
+                    cards: [{ question: "Pergunta", answer: "Resposta" }],
+                }),
+            };
+
+            const mockGenerateContent = vi
+                .fn()
+                .mockResolvedValue(mockCardsResponse);
+            GoogleGenAI.mockImplementation(() => ({
+                models: {
+                    generateContent: mockGenerateContent,
+                },
+            }));
+
+            DeckRepository.Create.mockResolvedValue(null);
+
+            await expect(
+                AiQuestionsService.GenerateDeck(1, "Teste", 1, 1)
+            ).rejects.toThrow(
+                "Não foi possível gerar o deck com a IA. Tente novamente."
+            );
         });
     });
 });
