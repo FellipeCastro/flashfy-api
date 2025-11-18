@@ -11,13 +11,13 @@ class ProgressService {
                 progress = await ProgressRepository.FindByUserId(idUser);
             }
 
-            // Verificar se é novo dia
+            // Verificar se é novo dia baseado na data atual vs lastStudyDate
             const isNewDay = await this.IsNewDay(idUser);
 
             // Se for novo dia, resetar studiedDecks para 0
             if (isNewDay) {
-                await ProgressRepository.UpdateStudiedDecks(idUser, 0);
                 console.log("🔄 Novo dia - resetando studiedDecks para 0");
+                await ProgressRepository.UpdateStudiedDecks(idUser, 0);
 
                 // Atualizar o objeto progress após reset
                 progress = await ProgressRepository.FindByUserId(idUser);
@@ -25,12 +25,28 @@ class ProgressService {
 
             // Verificar se precisa resetar dias consecutivos (mais de 1 dia sem estudar)
             const today = new Date();
-            const lastStudyDate = new Date(progress.lastStudyDate);
+            const lastStudyDate = progress.lastStudyDate
+                ? new Date(progress.lastStudyDate)
+                : null;
 
-            const diffTime = Math.abs(today - lastStudyDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const shouldReset =
-                !progress || !progress.lastStudyDate ? false : diffDays > 1;
+            let shouldReset = false;
+            if (lastStudyDate) {
+                // Calcula a diferença em dias, considerando o fuso horário
+                const todayStart = new Date(
+                    today.getFullYear(),
+                    today.getMonth(),
+                    today.getDate()
+                );
+                const lastStudyStart = new Date(
+                    lastStudyDate.getFullYear(),
+                    lastStudyDate.getMonth(),
+                    lastStudyDate.getDate()
+                );
+
+                const diffTime = todayStart - lastStudyStart;
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                shouldReset = diffDays > 1;
+            }
 
             if (shouldReset) {
                 console.log(
@@ -89,12 +105,18 @@ class ProgressService {
             const today = new Date();
             const lastStudyDate = new Date(progress.lastStudyDate);
 
-            const isSameDay =
-                today.getFullYear() === lastStudyDate.getFullYear() &&
-                today.getMonth() === lastStudyDate.getMonth() &&
-                today.getDate() === lastStudyDate.getDate();
+            const todayDate = new Date(
+                today.getFullYear(),
+                today.getMonth(),
+                today.getDate()
+            );
+            const lastStudyDay = new Date(
+                lastStudyDate.getFullYear(),
+                lastStudyDate.getMonth(),
+                lastStudyDate.getDate()
+            );
 
-            return !isSameDay;
+            return todayDate.getTime() !== lastStudyDay.getTime();
         } catch (error) {
             console.error("Erro ao verificar se é novo dia: ", error.message);
             return true;
@@ -103,7 +125,6 @@ class ProgressService {
 
     async UpdateProgress(idUser) {
         try {
-            // Busca o progresso atual (já com os resets feitos no List)
             const progress = await ProgressRepository.FindByUserId(idUser);
             if (!progress) {
                 throw new Error("Progresso não encontrado");
@@ -121,16 +142,19 @@ class ProgressService {
             // Verifica se é novo dia para determinar se incrementa consecutiveDays
             const isNewDay = await this.IsNewDay(idUser);
 
+            let newConsecutiveDays = progress.consecutiveDays;
+
             if (isNewDay) {
-                // Se for novo dia, incrementa 1
-                const newConsecutiveDays = progress.consecutiveDays + 1;
-                // Atualiza consecutiveDays e lastStudyDate
-                await ProgressRepository.UpdateConsecutiveDays(
-                    idUser,
-                    newConsecutiveDays,
-                    today
-                );
+                // Se for novo dia, incrementa consecutiveDays
+                newConsecutiveDays = progress.consecutiveDays + 1;
             }
+
+            // Atualiza consecutiveDays e lastStudyDate
+            await ProgressRepository.UpdateConsecutiveDays(
+                idUser,
+                newConsecutiveDays,
+                today
+            );
         } catch (error) {
             console.error("Erro ao atualizar progresso: ", error.message);
             throw new Error("Erro ao atualizar progresso.");
