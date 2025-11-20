@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import Token from "../middleware/token.js";
 import { defaultSubjects } from "../constants/defaultSubjects.js";
 import SubjectService from "./SubjectService.js";
