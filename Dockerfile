@@ -1,14 +1,12 @@
-# Usando a imagem em Node
-FROM node:22
+FROM node:18
 
-WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm install --omit=dev
+WORKDIR /api
 
 COPY . .
 
-EXPOSE 5000
+RUN rm -rf node_modules
+RUN npm install --omit=dev
 
-CMD ["node","server.js"]
+CMD ["npm", "start"]
+
+EXPOSE 5000

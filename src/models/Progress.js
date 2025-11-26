@@ -1,5 +1,5 @@
 import { DataTypes } from "sequelize";
-import sequelize from "../database/config.js";
+import sequelize from "../config/database.js";
 
 const Progress = sequelize.define(
     "Progress",
