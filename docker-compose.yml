@@ -11,6 +11,18 @@ services:
             - "5432:5432"
         volumes:
             - polls_pg_data:/bitnami/postgresql
+        restart: always 
+
+    api: 
+        container_name: flashfy-api
+        build: . 
+        restart: always
+        ports:
+            - 5000:5000
+        depends_on:
+            - db
+        env_file:
+            - .env
 
 volumes:
     polls_pg_data:
